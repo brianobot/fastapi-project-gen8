@@ -1,3 +1,4 @@
+import os
 import time
 import json
 import subprocess
@@ -48,6 +49,7 @@ def intro_text() -> None:
     even though the defaults match your project attribute.
     
     Current Best Record: {get_current_best_record()[0]} seconds - Title: [{get_current_best_record()[1]}] 
+    _____________________________________________________________________________________________________
     """
     print(description)
     
@@ -61,6 +63,7 @@ def get_project_detail(
     if "_" in attr:
         attr = attr.lower()
     if attr == "slug_name":
+        # Update the slug name to match the project nanme
         default = slugify(str(project_detail['name']))
     
     if attr not in {"open_source_license", "username_type"}:
@@ -107,7 +110,6 @@ def get_project_detail(
         detail = tuple(cast(str, detail).split(","))
     return detail if detail else default
 
-
 def generate_project(project_detail: dict[str, str]):
     # Clone The Default Project Template into Folder with Project Slug Name
     # check if the project already exist
@@ -115,9 +117,22 @@ def generate_project(project_detail: dict[str, str]):
     if Path(f"{project_detail['slug_name']}").exists():
         warning_print("Directory Already Exist")
     else:
-        result = subprocess.Popen(["git", "clone", "https://github.com/brianobot/fastAPI_project_structure", f"{project_detail['slug_name']}"])
-    print(f"✅✅✅ Result = {result}")
-
+        try:
+            clone_template_repo = subprocess.Popen(["git", "clone", "https://github.com/brianobot/fastAPI_project_structure", f"{project_detail['slug_name']}"])
+            clone_template_repo.wait()
+        except Exception as err:
+            error_print(f"Failed to Download Template: Reason: {err}")
+            exit(1)
+   
+    # Move into the Project Directory and Setup Git
+    os.chdir(f"{project_detail['slug_name']}")
+    
+    Path(".git").unlink()
+    subprocess.Popen(["git", "init"]).wait()
+    subprocess.Popen(["git", "remote", "add", "origin", project_detail["repository_link"]]).wait()
+    
+    success_print("Completed Project Initialization 🚀")
+    
 
 def slugify(text: str) -> str:
     return text.replace(" ", "_").replace("-", "_").lower()
@@ -134,13 +149,15 @@ def error_print(value: str):
 
 def main():
     intro_text()
+    
     project_details: dict[str, str | int | tuple] = {
         "name": "My Awesome FastAPI Project",
         "slug_name": "my_awesome_fastapi_project",
         "description": "FastAPI Backend Project",
-        "authors": ("John Doe", "Jane Doe"),
+        "author(s)": ("John Doe", "Jane Doe"),
         "version": "0.1.0",
         "email": "brianobot9@gmail.com",
+        "repository_link": "",
         "open_source_license": ("1", [
             (1, "MIT"), 
             (2, "BSD"), 

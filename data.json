@@ -1,1 +1,1 @@
-{"name": "My Awesome FastAPI Project", "slug_name": "my_awesome_fastapi_project", "description": "FastAPI Backend Project", "authors": ["John Doe", "Jane Doe"], "version": "0.1.0", "email": "brianobot9@gmail.com", "open_source_license": "MIT", "username_type": "email"}
+{"name": "My Awesome FastAPI Project", "slug_name": "my_awesome_fastapi_project", "description": "FastAPI Backend Project", "author(s)": ["John Doe", "Jane Doe"], "version": "0.1.0", "email": "brianobot9@gmail.com", "repository_link": "", "open_source_license": "MIT", "username_type": "email"}
