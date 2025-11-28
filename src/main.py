@@ -2,6 +2,7 @@ import os
 import time
 import json
 import subprocess
+
 from typing import cast
 from pathlib import Path
 
@@ -24,12 +25,12 @@ def intro_text() -> None:
     ██║     ██║  ██║╚██████╔╝██████╔╝███████╗╚██████╗    ██║   
     ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝    ╚═╝                     
                                                                  
-     ██████╗ ███████╗███╗   ██╗███████╗ █████╗     
-    ██╔════╝ ██╔════╝████╗  ██║██╔════╝██╔══██╗    
-    ██║  ███╗█████╗  ██╔██╗ ██║█████╗   █████╔╝   
-    ██║   ██║██╔══╝  ██║╚██╗██║██╔══╝  ██╔══██╗  
-    ╚██████╔╝███████╗██║ ╚████║███████╗ █████╔╝  
-        ╚═════╝ ╚══════╝╚═╝  ╚═══╝╚═══╝ ╚════╝    
+     ██████╗ ███████╗███╗   ██╗ █████╗     
+    ██╔════╝ ██╔════╝████╗  ██║██╔══██╗    
+    ██║  ███╗█████╗  ██╔██╗ ██║ █████╔╝   
+    ██║   ██║██╔══╝  ██║╚██╗██║██╔══██╗  
+    ╚██████╔╝███████╗██║ ╚████║ █████╔╝  
+        ╚═════╝ ╚══════╝╚═╝  ╚╝ ╚════╝    
     ______________________________________________________________
     """
     print(intro_message)
@@ -113,25 +114,32 @@ def get_project_detail(
 def generate_project(project_detail: dict[str, str]):
     # Clone The Default Project Template into Folder with Project Slug Name
     # check if the project already exist
-    result = None
-    if Path(f"{project_detail['slug_name']}").exists():
+    
+    project_slug_name = project_detail['slug_name']
+    if Path(project_slug_name).exists():
         warning_print("Directory Already Exist")
     else:
         try:
-            clone_template_repo = subprocess.Popen(["git", "clone", "https://github.com/brianobot/fastAPI_project_structure", f"{project_detail['slug_name']}"])
+            clone_template_repo = subprocess.Popen(["git", "clone", "https://github.com/brianobot/fastAPI_project_structure", project_slug_name])
             clone_template_repo.wait()
         except Exception as err:
             error_print(f"Failed to Download Template: Reason: {err}")
             exit(1)
    
     # Move into the Project Directory and Setup Git
-    os.chdir(f"{project_detail['slug_name']}")
+    os.chdir(project_slug_name)
     
-    Path(".git").unlink()
+    # pull changes from the user-with-email branch
+    subprocess.Popen(["git", "config", "pull.rebase", "false"]).wait()
+    subprocess.Popen(["git", "pull", "origin", "user-with-email", "--no-edit"]).wait()
+    
+    # Remove former git metadata and link repo to the provided repo link
+    subprocess.Popen(["rm", "-rf", ".git"]).wait()
     subprocess.Popen(["git", "init"]).wait()
     subprocess.Popen(["git", "remote", "add", "origin", project_detail["repository_link"]]).wait()
     
-    success_print("Completed Project Initialization 🚀")
+    
+    success_print("✅ Completed Project Initialization 🚀")
     
 
 def slugify(text: str) -> str:
@@ -165,11 +173,12 @@ def main():
             (4, "Apache Software License 2.0"), 
             (5, "Not open source"),
         ]),
-        "username_type": ("1", [
-            (1, "email"),
-            (2, "username"),
-            (3, "email + username"),
-        ]),        
+        # "username_type": ("1", [
+        #     (1, "email"),
+        #     (2, "username"),
+        #     (3, "email + username"),
+        #     (4, "None"),
+        # ]),        
     }
     
     start_time = time.time()

@@ -36,6 +36,9 @@ Whether you're spinning up a new microservice or testing a prototype idea, Gen8 
 Before igniting the generator, make sure you've completed the following:
 
 - Create a remote Git repository for your new project.
+- Operational Postgres or Any Other database running on your machine
+- Operation Redis Server running on your machine
+
 
 Gen8 will automatically initialize Git and link your project to the remote origin you provide.
 (Think of it as handing the newborn project its first passport.)
