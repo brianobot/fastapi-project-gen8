@@ -62,6 +62,8 @@ Usage
 ```bash
 fastapi-gen8
 ```
+![Introduction Screenshot](images/intro_demo.png)
+
 
 You’ll be prompted for project details such as name, slug, description, and Git remote URL.
 Then—whoosh!—a fully structured FastAPI project appears in your universe.
