@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fastapi-gen8"
+version = "0.0.1"
+authors = [
+  { name="Brian Obot", email="brianobot9@gmail.com" },
+]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://github.com/brianobot/fastapi-project-gen8"
+Issues = "https://github.com/brianobot/fastapi-project-gen8/issues"
