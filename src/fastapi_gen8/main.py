@@ -1,6 +1,5 @@
 import os
 import time
-import json
 import subprocess
 
 from typing import cast
@@ -45,6 +44,7 @@ def intro_text() -> None:
     _____________________________________________________________________________________________________
     """
     # FUN 🚀
+    
     # How Fast Can you Complete your FastAPI project setup?
     # Blaze through the steps to make the global leaderboard for projects generated with FastAPI Project Gen8.
     # In Order to qualify for this leaderboard, you have to make sure to input every project detail and not use defaults
@@ -190,7 +190,6 @@ def main():
     print("----------------------------------------------")
     success_print(f"Elasped Time: {elapsed_time:.4f} secs 🎉🎉")
     print("----------------------------------------------")
-    json.dump(project_details, open("data.json", "w"))
 
     # Generate Projects with the Details Provided by the User
     generate_project(cast(dict[str, str], project_details))

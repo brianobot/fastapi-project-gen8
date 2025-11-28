@@ -24,20 +24,21 @@ ______________________________________________________________
         ╚═════╝ ╚══════╝╚═╝  ╚═══╝╚═══╝ ╚════╝    
 ______________________________________________________________
 
-Generate FastAPI Projects in Seconds
+Generate FastAPI Projects in Seconds 🚀
 
 ## Overview
 
-FastAPI Project Gen8 is a lightweight command-line tool designed to generate clean, structured, production-ready FastAPI project scaffolds at warp speed.
+FastAPI Gen8 is a lightweight command-line tool designed to generate clean, structured, production-ready FastAPI project scaffolds at warp speed.
 Whether you're spinning up a new microservice or testing a prototype idea, Gen8 gives you a fresh, organized foundation with sensible defaults — so you can focus on building, not boring setup rituals.
+
 
 ### Prerequisites
 
 Before igniting the generator, make sure you've completed the following:
 
 - Create a remote Git repository for your new project.
-- Operational Postgres or Any Other database running on your machine
-- Operation Redis Server running on your machine
+- Optionally Setup a Database (E.g, Postgres, MySQL) for your Fastapi
+- Setup a Redis Server running on your machine
 
 
 Gen8 will automatically initialize Git and link your project to the remote origin you provide.
@@ -53,7 +54,7 @@ Gen8 will automatically initialize Git and link your project to the remote origi
 
 Installation
 ```bash
-pip install fastapi-project-gen8
+pip install fastapi-gen8
 ```
 
 (or whatever installation method your tool uses — adjust as needed.)
