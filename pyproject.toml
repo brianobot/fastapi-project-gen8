@@ -21,3 +21,6 @@ license-files = ["LICEN[CS]E*"]
 [project.urls]
 Homepage = "https://github.com/brianobot/fastapi-project-gen8"
 Issues = "https://github.com/brianobot/fastapi-project-gen8/issues"
+
+[project.scripts]
+fastapi-gen8 = "fastapi_gen8.main:main"

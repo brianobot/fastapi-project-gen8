@@ -42,16 +42,14 @@ def intro_text() -> None:
     Provide Project Details to each prompt and press Enter complete project setup
     Values placed within square brackets ([My Awesome FastAPI Project]) are defaults values for the project details
     If you do not provide a value, those values are used instead
-    
-    FUN 🚀
-    How Fast Can you Complete your FastAPI project setup?
-    Blaze through the steps to make the global leaderboard for projects generated with FastAPI Project Gen8.
-    In Order to qualify for this leaderboard, you have to make sure to input every project detail and not use defaults
-    even though the defaults match your project attribute.
-    
-    Current Best Record: {get_current_best_record()[0]} seconds - Title: [{get_current_best_record()[1]}] 
     _____________________________________________________________________________________________________
     """
+    # FUN 🚀
+    # How Fast Can you Complete your FastAPI project setup?
+    # Blaze through the steps to make the global leaderboard for projects generated with FastAPI Project Gen8.
+    # In Order to qualify for this leaderboard, you have to make sure to input every project detail and not use defaults
+    # even though the defaults match your project attribute.
+    # Current Best Record: {get_current_best_record()[0]} seconds - Title: [{get_current_best_record()[1]}] 
     print(description)
     
     
