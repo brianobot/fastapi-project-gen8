@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fastapi-gen8"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Brian Obot", email="brianobot9@gmail.com" },
 ]
