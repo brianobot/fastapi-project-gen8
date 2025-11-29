@@ -75,15 +75,29 @@ fastapi-gen8 --name "my-awesome-api" --remote "git@github.com:me/my-awesome-api.
 #### Project Structure
 A typical generated project looks like:
 
-my-awesome-api/
+```
+<project_slug_name>/
 ├── app/
 │   ├── main.py
 │   ├── routers/
-│   └── core/
+│   ├── models/
+│   ├── services/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── api_router.py
+│   ├── dependencies.py
+│   ├── logger.py
+│   ├── middlewares.py
+│   ├── mailer.py
+│   ├── redis_manager.py
+│   └── utils
 ├── requirements.txt
+├── alembic/
+├── alembic.ini
 ├── .gitignore
 ├── README.md
 └── ...
+```
 
 ## Why FastAPI Gen8?
 
@@ -92,4 +106,4 @@ my-awesome-api/
 - Because momentum matters — and FastAPI Gen8 gives you that first push.
 
 ## License
-- MIT License
+- [MIT License](LICENSE)
