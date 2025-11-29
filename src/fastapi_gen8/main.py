@@ -5,6 +5,14 @@ import subprocess
 from typing import cast
 from pathlib import Path
 
+from helpers import (
+    slugify, 
+    error_print,
+    success_print, 
+    warning_print, 
+    clone_repository,
+)
+
 
 def intro_text() -> None:
     intro_message = """
@@ -115,14 +123,10 @@ def generate_project(project_detail: dict[str, str]):
     
     project_slug_name = project_detail['slug_name']
     if Path(project_slug_name).exists():
-        warning_print("Directory Already Exist")
-    else:
-        try:
-            clone_template_repo = subprocess.Popen(["git", "clone", "https://github.com/brianobot/fastAPI_project_structure", project_slug_name])
-            clone_template_repo.wait()
-        except Exception as err:
-            error_print(f"Failed to Download Template: Reason: {err}")
-            exit(1)
+        error_print("Directory Already Exist")
+        exit(1)
+    
+    clone_repository("https://github.com/brianobot/fastAPI_project_structure", project_slug_name)
    
     # Move into the Project Directory and Setup Git
     os.chdir(project_slug_name)
@@ -139,19 +143,6 @@ def generate_project(project_detail: dict[str, str]):
     
     success_print("✅ Completed Project Initialization 🚀")
     
-
-def slugify(text: str) -> str:
-    return text.replace(" ", "_").replace("-", "_").lower()
-
-def success_print(value: str):
-    print("\033[92m{}\033[00m".format(value))
-
-def warning_print(value: str):
-    print("\033[33m{}\033[00m".format(value))
-
-def error_print(value: str):
-    print("\033[31m{}\033[00m".format(value))
-
 
 def main():
     intro_text()
