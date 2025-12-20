@@ -5,7 +5,7 @@ import subprocess
 from typing import cast
 from pathlib import Path
 
-from helpers import (
+from .helpers import (
     slugify, 
     error_print,
     success_print, 
@@ -72,6 +72,10 @@ def get_project_detail(
     if attr == "slug_name":
         # Update the slug name to match the project nanme
         default = slugify(str(project_detail['name']))
+    if attr == "description":
+        # Include the Project name in the default description for better suggestion
+        print("About to Update the Description")
+        default = cast(str, default) + f" for {project_detail['name']}"
     
     if attr not in {"open_source_license", "username_type"}:
         detail = input(f"Enter Project {attr} ['{default}']: ")
@@ -131,6 +135,9 @@ def generate_project(project_detail: dict[str, str]):
     # Move into the Project Directory and Setup Git
     os.chdir(project_slug_name)
     
+    # Create the Log directory
+    subprocess.Popen(["mkdir", "logs"])
+    
     # pull changes from the user-with-email branch
     subprocess.Popen(["git", "config", "pull.rebase", "false"]).wait()
     subprocess.Popen(["git", "pull", "origin", "user-with-email", "--no-edit"]).wait()
@@ -140,8 +147,15 @@ def generate_project(project_detail: dict[str, str]):
     subprocess.Popen(["git", "init"]).wait()
     subprocess.Popen(["git", "remote", "add", "origin", project_detail["repository_link"]]).wait()
     
+    # create and activate virtual environment
+    subprocess.Popen(["python3", "-m", "venv", "venv"]).wait()
+    subprocess.Popen(["bash", "-c", "source", "venv/bin/activate"]).wait()
+    subprocess.Popen(["pip", "install", "-r", "requirements.txt"]).wait()
     
+    
+    print("____________________________________________")
     success_print("✅ Completed Project Initialization 🚀")
+    print("____________________________________________")
     
 
 def main():
@@ -152,6 +166,7 @@ def main():
         "slug_name": "my_awesome_fastapi_project",
         "description": "FastAPI Backend Project",
         "author(s)": ("John Doe", "Jane Doe"),
+        "virtual_env_folder_name": "venv",
         "version": "0.1.0",
         "email": "brianobot9@gmail.com",
         "repository_link": "",
@@ -184,7 +199,9 @@ def main():
 
     # Generate Projects with the Details Provided by the User
     generate_project(cast(dict[str, str], project_details))
-
+    
+    from icecream import ic
+    ic(project_details)
 
 if __name__ == "__main__":
     main()
