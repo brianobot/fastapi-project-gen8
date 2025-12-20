@@ -1,6 +1,8 @@
 import os
 import time
 import subprocess
+import re
+
 
 from typing import cast
 from pathlib import Path
@@ -121,6 +123,36 @@ def get_project_detail(
         detail = tuple(cast(str, detail).split(","))
     return detail if detail else default
 
+
+def apply_project_metadata(project_detail: dict[str, str]) -> None:
+    # replace placeholder values with user generated values
+    target  = Path("app/main.py")
+    if not target.exists():
+        print("main.py not found, skipping metadata update")
+        return 
+    
+    content = target.read_text()
+
+    content = content.replace(
+        'title="{{ project_name }}"',
+        f'title="{project_detail["name"]}"',
+        1,
+    )
+    content = content.replace(
+        'version="{{ project_version }}"',
+        f'version="{project_detail["version"]}"',
+        1,
+)
+
+    content = re.sub(
+        r'summary\s*=\s*["\']\{\{\s*project_description\s*\}\}["\']',
+        f'summary="{project_detail["description"]}"',
+        content,
+        count=1,
+    )
+    target.write_text(content)
+
+
 def generate_project(project_detail: dict[str, str]):
     # Clone The Default Project Template into Folder with Project Slug Name
     # check if the project already exist
@@ -134,10 +166,22 @@ def generate_project(project_detail: dict[str, str]):
    
     # Move into the Project Directory and Setup Git
     os.chdir(project_slug_name)
-    
+
     # Create the Log directory
     subprocess.Popen(["mkdir", "logs"])
-    
+
+    # change default project values to user-defined values
+    apply_project_metadata(
+        cast(
+            dict[str, str],
+            {
+                "name": str(project_detail["name"]),
+                "description": str([project_detail["description"]]),
+                "version": str(project_detail["version"]),
+        }, 
+    )
+    )
+
     # pull changes from the user-with-email branch
     subprocess.Popen(["git", "config", "pull.rebase", "false"]).wait()
     subprocess.Popen(["git", "pull", "origin", "user-with-email", "--no-edit"]).wait()
@@ -156,7 +200,7 @@ def generate_project(project_detail: dict[str, str]):
     print("____________________________________________")
     success_print("✅ Completed Project Initialization 🚀")
     print("____________________________________________")
-    
+
 
 def main():
     intro_text()
