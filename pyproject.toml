@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fastapi-gen8"
-version = "0.0.2"
+version = "0.0.6"
 authors = [
   { name="Brian Obot", email="brianobot9@gmail.com" },
 ]
-description = "A small example package"
+description = "FastAPI Project Gen8 is a lightweight command-line tool designed to generate clean, structured, production-ready FastAPI project scaffolds at warp speed"
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [

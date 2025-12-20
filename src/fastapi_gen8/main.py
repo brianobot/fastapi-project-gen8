@@ -1,8 +1,10 @@
 import os
+import re
 import time
 import subprocess
-import re
 
+import argparse
+import importlib.metadata
 
 from typing import cast
 from pathlib import Path
@@ -178,9 +180,11 @@ def generate_project(project_detail: dict[str, str]):
                 "name": str(project_detail["name"]),
                 "description": str([project_detail["description"]]),
                 "version": str(project_detail["version"]),
-        }, 
+            }, 
+        )
     )
-    )
+    # Commit changes for metadata changes before continueing
+    subprocess.Popen(["git", "commit", "-am", "Save Metadata Changes"]).wait()
 
     # pull changes from the user-with-email branch
     subprocess.Popen(["git", "config", "pull.rebase", "false"]).wait()
@@ -203,6 +207,19 @@ def generate_project(project_detail: dict[str, str]):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        prog="fastapi-gen8",
+        description="Generate clean, production-ready FastAPI project scaffolds",
+    )
+    
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {importlib.metadata.version('fastapi-gen8')}",
+    )
+
+    _args = parser.parse_args()
+        
     intro_text()
     
     project_details: dict[str, str | int | tuple] = {
@@ -243,9 +260,7 @@ def main():
 
     # Generate Projects with the Details Provided by the User
     generate_project(cast(dict[str, str], project_details))
-    
-    from icecream import ic
-    ic(project_details)
+
 
 if __name__ == "__main__":
     main()
