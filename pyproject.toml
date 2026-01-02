@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fastapi-gen8"
+version = "0.0.6"
+authors = [
+  { name="Brian Obot", email="brianobot9@gmail.com" },
+]
+description = "FastAPI Project Gen8 is a lightweight command-line tool designed to generate clean, structured, production-ready FastAPI project scaffolds at warp speed"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://github.com/brianobot/fastapi-project-gen8"
+Issues = "https://github.com/brianobot/fastapi-project-gen8/issues"
+
+[project.scripts]
+fastapi-gen8 = "fastapi_gen8.main:main"
