@@ -43,12 +43,12 @@ def generate_default_project_details() -> dict[str, str | int | tuple]:
         "name": "My Awesome FastAPI Project",
         "slug_name": "my_awesome_fastapi_project",
         "description": "FastAPI Project Description",
-        "author(s)": ("John Doe", "Jane Doe"),
+        "author(s)": "John Doe",
         "virtual_env_folder_name": "venv",
         "version": "0.1.0",
         "email": "brianobot9@gmail.com",
         "repository_link": "",
-        "open_source_license": ("1", [
+        "open_source_license": (1, [
             (1, "MIT"), 
             (2, "BSD"), 
             (3, "GPLv3"), 
@@ -64,7 +64,7 @@ def get_project_detail(
     project_detail: dict[str, str | int | tuple]
 ) -> str | int | tuple[str, ...]:
     """
-    This functions gets a project detail from the user via the command line interface, if nothing is provided
+    Get a project detail (attr) from the user via the command line interface, if nothing is provided
     the default value is used for the project detail value.
     """
    
