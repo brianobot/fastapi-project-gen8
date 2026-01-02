@@ -1,9 +1,9 @@
 import os
 import re
 import time
-import subprocess
 
 import argparse
+import subprocess
 import importlib.metadata
 
 from typing import cast
@@ -15,73 +15,61 @@ from .helpers import (
     success_print, 
     warning_print, 
     clone_repository,
+    display_intro_text,
 )
 
 
-def intro_text() -> None:
-    intro_message = """
-    ______________________________________________________________
-    
-    ███████╗ █████╗ ███████╗████████╗ █████╗ ██████╗ ██╗ 
-    ██╔════╝██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║
-    █████╗  ███████║███████╗   ██║   ███████║██████╔╝██║
-    ██╔══╝  ██╔══██║╚════██║   ██║   ██╔══██║██      ██║
-    ██║     ██║  ██║███████║   ██║   ██║  ██║██║    ║██║
-    ╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝    ╚╝╚╝
-    
-    ██████╗ ██████╗  ██████╗ ███████╗███████╗ ██████  ████████╗
-    ██╔══██╗██╔══██╗██╔═══██╗ ════██╗██╔════╝██╔════╝ ╚══██╔══╝
-    ██████╔╝██████╔╝██║   ██║     ██║█████╗  ██║         ██║   
-    ██╔═══╝ ██╔══██╗██║   ██║███  ██║██╔══╝  ██║         ██║   
-    ██║     ██║  ██║╚██████╔╝██████╔╝███████╗╚██████╗    ██║   
-    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝    ╚═╝                     
-                                                                 
-     ██████╗ ███████╗███╗   ██╗ █████╗     
-    ██╔════╝ ██╔════╝████╗  ██║██╔══██╗    
-    ██║  ███╗█████╗  ██╔██╗ ██║ █████╔╝   
-    ██║   ██║██╔══╝  ██║╚██╗██║██╔══██╗  
-    ╚██████╔╝███████╗██║ ╚████║ █████╔╝  
-        ╚═════╝ ╚══════╝╚═╝  ╚╝ ╚════╝    
-    ______________________________________________________________
+def generate_default_project_details() -> dict[str, str | int | tuple]:
     """
-    print(intro_message)
-    description = """
-    Generate a fully structured FastAPI projects instantly.  
-    Boilerplate code, ready-to-run endpoints, and project scaffolding  
-    all in one simple command. Kickstart your backend in seconds!
+    Generates Default Project Details
     
-    Provide Project Details to each prompt and press Enter complete project setup
-    Values placed within square brackets ([My Awesome FastAPI Project]) are defaults values for the project details
-    If you do not provide a value, those values are used instead
-    _____________________________________________________________________________________________________
+    For Single Value Constant Details like name, description etc
+    The values are provided to the dictionary as simple String values
+    But for Enumerated Values like open_source_license type
+    the options are passed as a list of tuples where the the first item in tuple
+    if the enumerate for the item and the second item is the actual value to be stored,
+    
+    like so
+    
+    open_source_license: (
+        "<default_enumeration>", [
+            (<enumeration>, "<actual_value>"),
+            ...
+        ]
+    )
+    
     """
-    # FUN 🚀
-    
-    # How Fast Can you Complete your FastAPI project setup?
-    # Blaze through the steps to make the global leaderboard for projects generated with FastAPI Project Gen8.
-    # In Order to qualify for this leaderboard, you have to make sure to input every project detail and not use defaults
-    # even though the defaults match your project attribute.
-    # Current Best Record: {get_current_best_record()[0]} seconds - Title: [{get_current_best_record()[1]}] 
-    print(description)
-    
+    return {
+        "name": "My Awesome FastAPI Project",
+        "slug_name": "my_awesome_fastapi_project",
+        "description": "FastAPI Project Description",
+        "author(s)": ("John Doe", "Jane Doe"),
+        "virtual_env_folder_name": "venv",
+        "version": "0.1.0",
+        "email": "brianobot9@gmail.com",
+        "repository_link": "",
+        "open_source_license": ("1", [
+            (1, "MIT"), 
+            (2, "BSD"), 
+            (3, "GPLv3"), 
+            (4, "Apache Software License 2.0"), 
+            (5, "Not open source"),
+        ]),    
+    }
+
     
 def get_project_detail(
     attr: str, 
     default: str | int | tuple[str, ...], 
     project_detail: dict[str, str | int | tuple]
 ) -> str | int | tuple[str, ...]:
-    # Process the display for collecting the detail
-    if "_" in attr:
-        attr = attr.lower()
-    if attr == "slug_name":
-        # Update the slug name to match the project nanme
-        default = slugify(str(project_detail['name']))
-    if attr == "description":
-        # Include the Project name in the default description for better suggestion
-        print("About to Update the Description")
-        default = cast(str, default) + f" for {project_detail['name']}"
-    
-    if attr not in {"open_source_license", "username_type"}:
+    """
+    This functions gets a project detail from the user via the command line interface, if nothing is provided
+    the default value is used for the project detail value.
+    """
+   
+    # Tuples Attrs means the detail have options, so process them differently
+    if not isinstance(attr, tuple):
         detail = input(f"Enter Project {attr} ['{default}']: ")
     else:
         count = 0
@@ -120,7 +108,7 @@ def get_project_detail(
     
     # Process the value provided by the user
     if attr == "slug_name":
-        detail = slugify(cast(str, detail))
+        detail = slugify(cast(str, detail)) if detail else None
     if attr == "authors":
         detail = tuple(cast(str, detail).split(","))
     return detail if detail else default
@@ -155,7 +143,7 @@ def apply_project_metadata(project_detail: dict[str, str]) -> None:
     target.write_text(content)
 
 
-def generate_project(project_detail: dict[str, str]):
+def generate_project_scaffold(project_detail: dict[str, str]):
     # Clone The Default Project Template into Folder with Project Slug Name
     # check if the project already exist
     
@@ -207,6 +195,9 @@ def generate_project(project_detail: dict[str, str]):
 
 
 def main():
+    """
+    Main entry point to interacting with the Command Line Utility of the Generator Library
+    """
     parser = argparse.ArgumentParser(
         prog="fastapi-gen8",
         description="Generate clean, production-ready FastAPI project scaffolds",
@@ -220,36 +211,13 @@ def main():
 
     _args = parser.parse_args()
         
-    intro_text()
+    display_intro_text()
+    project_details = generate_default_project_details()
     
-    project_details: dict[str, str | int | tuple] = {
-        "name": "My Awesome FastAPI Project",
-        "slug_name": "my_awesome_fastapi_project",
-        "description": "FastAPI Backend Project",
-        "author(s)": ("John Doe", "Jane Doe"),
-        "virtual_env_folder_name": "venv",
-        "version": "0.1.0",
-        "email": "brianobot9@gmail.com",
-        "repository_link": "",
-        "open_source_license": ("1", [
-            (1, "MIT"), 
-            (2, "BSD"), 
-            (3, "GPLv3"), 
-            (4, "Apache Software License 2.0"), 
-            (5, "Not open source"),
-        ]),
-        # "username_type": ("1", [
-        #     (1, "email"),
-        #     (2, "username"),
-        #     (3, "email + username"),
-        #     (4, "None"),
-        # ]),        
-    }
-    
-    start_time = time.time()
+    start_time = time.time() # this is an internal metric to track the duration for each project generation
     for attr, default_value in project_details.items():
         detail = get_project_detail(attr.title(), default_value, project_details)
-        project_details[attr] = detail
+        project_details[attr] = detail # update the default project detail with the provided one
         success_print(f"Project {attr.title()} = {detail}")
         
     
@@ -259,7 +227,7 @@ def main():
     print("----------------------------------------------")
 
     # Generate Projects with the Details Provided by the User
-    generate_project(cast(dict[str, str], project_details))
+    generate_project_scaffold(cast(dict[str, str], project_details))
 
 
 if __name__ == "__main__":
