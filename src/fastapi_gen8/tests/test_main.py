@@ -24,20 +24,20 @@ def test_generate_default_project_details():
 @pytest.mark.parametrize(
     "attr,default_value,project_detail",
     [
-        # ("name", "My Awesome FastAPI Project Test", main.generate_default_project_details()),
-        # ("slug_name", "my_awesome_fastapi_project_test", main.generate_default_project_details()),
-        # ("description", "FastAPI Project Description", main.generate_default_project_details()),
-        # ("author(s)", "John Doe", main.generate_default_project_details()),
-        # ("virtual_env_folder_name", "venv", main.generate_default_project_details()),
-        # ("version", "0.0.1", main.generate_default_project_details()),
-        # ("email", "brianobot9@gmail.com", main.generate_default_project_details()),
-        # ("repository_url", "Default Name", main.generate_default_project_details()),
+        ("name", "My Awesome FastAPI Project Test", main.generate_default_project_details()),
+        ("slug_name", "my_awesome_fastapi_project", main.generate_default_project_details()),
+        ("description", "FastAPI Project Description", main.generate_default_project_details()),
+        ("author(s)", "John Doe", main.generate_default_project_details()),
+        ("virtual_env_folder_name", "venv", main.generate_default_project_details()),
+        ("version", "0.0.1", main.generate_default_project_details()),
+        ("email", "brianobot9@gmail.com", main.generate_default_project_details()),
+        ("repository_url", "Default Name", main.generate_default_project_details()),
         ("open_source_license", (1, [
-            (1, "MIT"), 
-            (2, "BSD"), 
-            (3, "GPLv3"), 
-            (4, "Apache Software License 2.0"), 
-            (5, "Not open source"),
+            "MIT", 
+            "BSD", 
+            "GPLv3", 
+            "Apache Software License 2.0", 
+            "Not open source",
         ]), main.generate_default_project_details()),
     ]
 )
@@ -47,10 +47,9 @@ def test_get_project_detail(attr: str, default_value: str | int | tuple, project
         print("✅ Response: ", result)
         # assert None
         if isinstance(default_value, tuple):
-            print("Default Value is a Tuple")
             default_value = cast(tuple, default_value)
-            assert result == cast(list, default_value[1])[default_value[0]][1]
+            assert result == cast(list, default_value[1])[default_value[0] - 1]
         else:
-            print("Default Value is not a Tuple")
             assert result == default_value
         assert isinstance(result, str | int | tuple)
+
