@@ -49,53 +49,81 @@ def generate_default_project_details() -> dict[str, str | int | tuple]:
         "email": "brianobot9@gmail.com",
         "repository_link": "",
         "open_source_license": (1, [
-            (1, "MIT"), 
-            (2, "BSD"), 
-            (3, "GPLv3"), 
-            (4, "Apache Software License 2.0"), 
-            (5, "Not open source"),
+            "MIT", 
+            "BSD", 
+            "GPLv3", 
+            "Apache Software License 2.0", 
+            "Not open source",
         ]),    
     }
+
+
+class ProjectOptionConfig:
+    """
+    Utility Functions for working with Project Detail Options.
+    """
+    
+    @classmethod
+    def get_option_at(cls, option: list[str], position: int) -> str:
+        """
+        Since indexes are zero based and position are 1 based
+        substracting 1 from each get the option at the current index
+        """
+        return option[position - 1]
+    
+    @classmethod
+    def get_default_option(cls, default: tuple[int, list[str]]) -> str:
+        """
+        Takes the whole default value, extracts the default index and extract the default value
+        based on the default index
+        """
+        default_index = default[0]
+        return cls.get_option_at(default[1], default_index)
 
     
 def get_project_detail(
     attr: str, 
-    default: str | int | tuple[str, ...], 
+    default: str | tuple[int, list[str]], 
     project_detail: dict[str, str | int | tuple]
-) -> str | int | tuple[str, ...]:
+) -> str | int:
     """
     Get a project detail (attr) from the user via the command line interface, if nothing is provided
     the default value is used for the project detail value.
     """
+    
+    if "_" in attr:
+        attr = attr.lower()
    
     # Tuples Attrs means the detail have options, so process them differently
-    if not isinstance(attr, tuple):
+    if not isinstance(default, tuple):
         detail = input(f"Enter Project {attr} ['{default}']: ")
     else:
         count = 0
         detail = ""
         is_not_valid = True
-        default_index = int(cast(tuple, project_detail[attr])[0]) - 1
-        default = cast(tuple, project_detail[attr])[1][default_index][1]
+        
+        default_value = ProjectOptionConfig.get_default_option(default)
         
         while is_not_valid:
-            options = cast(tuple[str, list[tuple[int, str]]], project_detail[attr])[1]
+            options = default[1]
+            print("Options: ", options)
+            
             print(f"Select {attr}:")
-            for index, option in options:
+            for index, option in enumerate(options, start=1):
                 print(f"\t{index} - {option}")
             
-            prompt_msg = f"Choose from {', '.join(str(i) for i in range(index))}: [{cast(tuple, project_detail[attr])[0]}]: "
+            prompt_msg = f"Choose from {', '.join(str(i) for i in range(1, index + 1))}: [{cast(tuple, project_detail[attr])[0]}]: "
             detail_index = input(prompt_msg)
 
             if not detail_index or detail_index.isspace():
-                detail = default
+                detail = default_value
                 is_not_valid = False
             elif not detail_index.isdigit():
                 warning_print(f"Invalid Value {detail_index} for {attr}... Please Try Again!")
-            elif int(detail_index) not in range(index + 1):
+            elif int(detail_index) not in range(1, index + 1):
                 warning_print(f"Invalid Value {detail_index} for {attr}... Please Try Again!")
             else:
-                detail = detail = cast(tuple, project_detail[attr])[1][int(detail_index) - 1][1]
+                detail = ProjectOptionConfig.get_option_at(options, int(detail_index))
                 is_not_valid = False
                 
             count += 1
@@ -216,6 +244,7 @@ def main():
     
     start_time = time.time() # this is an internal metric to track the duration for each project generation
     for attr, default_value in project_details.items():
+        print(f"Attr: {attr}, Default = {default_value}")
         detail = get_project_detail(attr.title(), default_value, project_details)
         project_details[attr] = detail # update the default project detail with the provided one
         success_print(f"Project {attr.title()} = {detail}")
@@ -227,8 +256,11 @@ def main():
     print("----------------------------------------------")
 
     # Generate Projects with the Details Provided by the User
-    generate_project_scaffold(cast(dict[str, str], project_details))
-
+    # generate_project_scaffold(cast(dict[str, str], project_details))
+    
+    from icecream import ic
+    ic(project_details)
+    
 
 if __name__ == "__main__":
     main()
