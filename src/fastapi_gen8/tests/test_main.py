@@ -25,7 +25,7 @@ def test_generate_default_project_details():
     "attr,default_value,project_detail",
     [
         ("name", "My Awesome FastAPI Project Test", main.generate_default_project_details()),
-        ("slug_name", "my_awesome_fastapi_project_test", main.generate_default_project_details()),
+        ("slug_name", "my_awesome_fastapi_project", main.generate_default_project_details()),
         ("description", "FastAPI Project Description", main.generate_default_project_details()),
         ("author(s)", "John Doe", main.generate_default_project_details()),
         ("virtual_env_folder_name", "venv", main.generate_default_project_details()),

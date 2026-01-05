@@ -93,6 +93,9 @@ def get_project_detail(
     
     if "_" in attr:
         attr = attr.lower()
+        
+    if attr == "slug_name":
+        default = slugify(str(project_detail["name"]))
    
     # Tuples Attrs means the detail have options, so process them differently
     if not isinstance(default, tuple):
@@ -213,8 +216,8 @@ def generate_project_scaffold(project_detail: dict[str, str]):
     
     # create and activate virtual environment
     subprocess.Popen(["python3", "-m", "venv", "venv"]).wait()
-    subprocess.Popen(["bash", "-c", "source", "venv/bin/activate"]).wait()
-    subprocess.Popen(["pip", "install", "-r", "requirements.txt"]).wait()
+    subprocess.Popen(["bash", "-c", "source venv/bin/activate && pip install -r requirements.txt"]).wait()
+    # subprocess.Popen(["pip", "install", "-r", "requirements.txt"]).wait()
     
     
     print("____________________________________________")
@@ -244,7 +247,6 @@ def main():
     
     start_time = time.time() # this is an internal metric to track the duration for each project generation
     for attr, default_value in project_details.items():
-        print(f"Attr: {attr}, Default = {default_value}")
         detail = get_project_detail(attr.title(), default_value, project_details)
         project_details[attr] = detail # update the default project detail with the provided one
         success_print(f"Project {attr.title()} = {detail}")
@@ -256,11 +258,9 @@ def main():
     print("----------------------------------------------")
 
     # Generate Projects with the Details Provided by the User
-    # generate_project_scaffold(cast(dict[str, str], project_details))
-    
-    from icecream import ic
-    ic(project_details)
+    generate_project_scaffold(cast(dict[str, str], project_details))
     
 
+    
 if __name__ == "__main__":
     main()
