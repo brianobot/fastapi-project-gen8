@@ -1,5 +1,7 @@
 # FastAPI Gen8
 
+FastAPI Project Gen8 is a lightweight command-line tool designed to generate clean, structured, production-ready FastAPI project scaffolds at warp speed
+
 ______________________________________________________________
     
     ███████╗ █████╗ ███████╗████████╗ █████╗ ██████╗ ██╗ 

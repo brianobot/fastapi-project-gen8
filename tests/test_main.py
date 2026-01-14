@@ -2,7 +2,7 @@ import pytest
 import unittest.mock
 
 from typing import cast
-from fastapi_gen8 import main
+from src.fastapi_gen8 import main
 
 
 def test_display_intro_text(capsys):
