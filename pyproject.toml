@@ -1,26 +1,64 @@
 [build-system]
-requires = ["hatchling >= 1.26"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
 name = "fastapi-gen8"
-version = "0.0.7"
-authors = [
-  { name="Brian Obot", email="brianobot9@gmail.com" },
-]
-description = "FastAPI Project Gen8 is a lightweight command-line tool designed to generate clean, structured, production-ready FastAPI project scaffolds at warp speed"
+dynamic = ["version"]
+description = 'FastAPI Project Gen8 is a lightweight command-line tool designed to generate clean, structured, production-ready FastAPI project scaffolds at warp speed'
 readme = "README.md"
-requires-python = ">=3.9"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
-]
+requires-python = ">=3.8"
 license = "MIT"
-license-files = ["LICEN[CS]E*"]
+keywords = []
+authors = [
+  { name = "Brian Obot", email = "brianobot@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "pytest",
+    "faker",
+]
 
 [project.urls]
-Homepage = "https://github.com/brianobot/fastapi-project-gen8"
-Issues = "https://github.com/brianobot/fastapi-project-gen8/issues"
+Documentation = "https://github.com/Brian Obot/fastapi-gen8#README.md"
+Issues = "https://github.com/Brian Obot/fastapi-gen8/issues"
+Source = "https://github.com/Brian Obot/fastapi-gen8"
 
-[project.scripts]
-fastapi-gen8 = "fastapi_gen8.main:main"
+[tool.hatch.version]
+path = "src/fastapi_gen8/__about__.py"
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/fastapi_gen8 tests}"
+
+[tool.coverage.run]
+source_pkgs = ["fastapi_gen8", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/fastapi_gen8/__about__.py",
+]
+
+[tool.coverage.paths]
+fastapi_gen8 = ["src/fastapi_gen8", "*/fastapi-gen8/src/fastapi_gen8"]
+tests = ["tests", "*/fastapi-gen8/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
