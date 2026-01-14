@@ -4,4 +4,3 @@ dist/
 *__pycache__*
 data.json
 .pytest_cache
-publish_2_pypi.sh
