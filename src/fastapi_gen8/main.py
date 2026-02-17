@@ -1,21 +1,19 @@
+import argparse
+import importlib.metadata
 import os
 import re
-import time
-
-import argparse
 import subprocess
-import importlib.metadata
-
-from typing import cast
+import time
 from pathlib import Path
+from typing import cast
 
 from .helpers import (
-    slugify,
-    error_print,
-    success_print,
-    warning_print,
     clone_repository,
     display_intro_text,
+    error_print,
+    slugify,
+    success_print,
+    warning_print,
 )
 
 
@@ -146,10 +144,10 @@ def get_project_detail(
 
     # Process the value provided by the user
     if attr == "slug_name":
-        detail = slugify(cast(str, detail)) if detail else None
+        detail = slugify(cast(str, detail)) if detail else ""
     if attr == "authors":
-        detail = tuple(cast(str, detail).split(","))
-    return detail if detail else default
+        detail = tuple(cast(str, detail).split(","))  # type: ignore
+    return detail if detail else default  # type: ignore
 
 
 def apply_project_metadata(project_detail: dict[str, str]) -> None:
@@ -213,11 +211,8 @@ def generate_project_scaffold(project_detail: dict[str, str]):
     )
     # Commit changes for metadata changes before continueing
     subprocess.Popen(["git", "commit", "-am", "Save Metadata Changes"]).wait()
-
     # pull changes from the user-with-email branch
     subprocess.Popen(["git", "config", "pull.rebase", "false"]).wait()
-    subprocess.Popen(["git", "pull", "origin", "user-with-email", "--no-edit"]).wait()
-
     # Remove former git metadata and link repo to the provided repo link
     subprocess.Popen(["rm", "-rf", ".git"]).wait()
     subprocess.Popen(["git", "init"]).wait()
