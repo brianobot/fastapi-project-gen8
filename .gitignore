@@ -3,4 +3,6 @@ venv/
 dist/
 *__pycache__*
 data.json
-.pytest_cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
