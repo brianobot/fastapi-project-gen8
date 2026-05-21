@@ -26,7 +26,7 @@ ______________________________________________________________
         ╚═════╝ ╚══════╝╚═╝  ╚═══╝╚═══╝ ╚════╝
 ______________________________________________________________
 
-Generate FastAPI Projects in Seconds 🚀
+Generate a Functional FastAPI Projects in Seconds 🚀
 
 ## Overview
 
@@ -39,27 +39,24 @@ Whether you're spinning up a new microservice or testing a prototype idea, Gen8 
 Before igniting the generator, make sure you've completed the following:
 
 - Create a remote Git repository for your new project.
-- Optionally Setup a Database (E.g, Postgres, MySQL) for your Fastapi
+- Optionally Setup a Database (E.g, Postgres, MySQL) for your FastAPI App
 - Setup a Redis Server running on your machine
 
 
 Gen8 will automatically initialize Git and link your project to the remote origin you provide.
-(Think of it as handing the newborn project its first passport.)
 
 ## Features
 
-- Instant FastAPI project scaffold
-- Automatic Git initialization + remote origin setup
-- Clean directory structure and preconfigured templates
-- Opinionated defaults without being bossy
-- Fast, simple, and repeatable — like a well-trained cosmic forge
+- Instant FastAPI project scaffold.
+- Automatic Git initialization + remote origin setup.
+- Clean directory structure and preconfigured templates.
+- Opinionated defaults with sensible fallbacks.
+- Fast, simple, and repeatable.
 
 Installation
 ```bash
 pip install fastapi-gen8
 ```
-
-(or whatever installation method your tool uses — adjust as needed.)
 
 Usage
 ```bash
@@ -69,10 +66,17 @@ fastapi-gen8
 
 
 You’ll be prompted for project details such as name, slug, description, and Git remote URL.
-Then—whoosh!—a fully structured FastAPI project appears in your universe.
+and also following through, a FastAPI project would be generated for you with those details.
+You can use the README on the generated project to verify and complete the project setup like updating .env file
+and running your first unit test on the project.
+
+### Note:
+The generated project comes with a comprehensive Unit tests for the code it contains
 
 ### Example
-fastapi-gen8 --name "my-awesome-api" --remote "git@github.com:me/my-awesome-api.git"
+```bash
+fastapi-gen8
+```
 
 #### Project Structure
 A typical generated project looks like:

@@ -8,40 +8,40 @@ def display_intro_text() -> None:
     """
     intro_message = """
     ______________________________________________________________
-    
-    ███████╗ █████╗ ███████╗████████╗ █████╗ ██████╗ ██╗ 
+
+    ███████╗ █████╗ ███████╗████████╗ █████╗ ██████╗ ██╗
     ██╔════╝██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║
     █████╗  ███████║███████╗   ██║   ███████║██████╔╝██║
     ██╔══╝  ██╔══██║╚════██║   ██║   ██╔══██║██      ██║
     ██║     ██║  ██║███████║   ██║   ██║  ██║██║    ║██║
     ╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝    ╚╝╚╝
-    
+
     ██████╗ ██████╗  ██████╗ ███████╗███████╗ ██████  ████████╗
     ██╔══██╗██╔══██╗██╔═══██╗ ════██╗██╔════╝██╔════╝ ╚══██╔══╝
-    ██████╔╝██████╔╝██║   ██║     ██║█████╗  ██║         ██║   
-    ██╔═══╝ ██╔══██╗██║   ██║███  ██║██╔══╝  ██║         ██║   
-    ██║     ██║  ██║╚██████╔╝██████╔╝███████╗╚██████╗    ██║   
-    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝    ╚═╝                     
-                                                                 
-     ██████╗ ███████╗███╗   ██╗ █████╗     
-    ██╔════╝ ██╔════╝████╗  ██║██╔══██╗    
-    ██║  ███╗█████╗  ██╔██╗ ██║ █████╔╝   
-    ██║   ██║██╔══╝  ██║╚██╗██║██╔══██╗  
-    ╚██████╔╝███████╗██║ ╚████║ █████╔╝  
-        ╚═════╝ ╚══════╝╚═╝  ╚╝ ╚════╝    
+    ██████╔╝██████╔╝██║   ██║     ██║█████╗  ██║         ██║
+    ██╔═══╝ ██╔══██╗██║   ██║███  ██║██╔══╝  ██║         ██║
+    ██║     ██║  ██║╚██████╔╝██████╔╝███████╗╚██████╗    ██║
+    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝ ╚═════╝    ╚═╝
+
+     ██████╗ ███████╗███╗   ██╗ █████╗
+    ██╔════╝ ██╔════╝████╗  ██║██╔══██╗
+    ██║  ███╗█████╗  ██╔██╗ ██║ █████╔╝
+    ██║   ██║██╔══╝  ██║╚██╗██║██╔══██╗
+    ╚██████╔╝███████╗██║ ╚████║ █████╔╝
+        ╚═════╝ ╚══════╝╚═╝  ╚╝ ╚════╝
     ______________________________________________________________
     """
     print(intro_message)
     description = """
-    Generate a fully structured FastAPI projects instantly.  
-    Boilerplate code, ready-to-run endpoints, and project scaffolding  
+    Generate a fully structured FastAPI projects instantly.
+    Boilerplate code, ready-to-run endpoints, and project scaffolding
     all in one simple command. Kickstart your backend in seconds!
-    
+
     Provide Project Details to each prompt and press 'Enter' to complete project setup
-    
+
     NOTES: Values placed within square brackets ([My Awesome FastAPI Project]) are defaults values for the project details
     If you do not provide a value for any particular, those values are used instead.
-    
+
     Have a Blast 🚀 - Brian
     _____________________________________________________________________________________________________
     """
@@ -71,12 +71,15 @@ def error_print(value: str):
     print("\033[31m{}\033[00m".format(value))
 
 
-def clone_repository(repository_url: str, folder_name: str):
+def clone_template_repository(
+    dir_name: str,
+    repository_url="https://github.com/brianobot/fastAPI_project_structure",
+):
     try:
         clone_template_repo = subprocess.Popen(
-            ["git", "clone", repository_url, folder_name]
+            ["git", "clone", repository_url, dir_name]
         )
         clone_template_repo.wait()
     except Exception as err:
-        error_print(f"Failed to Download Template: Reason: {err}")
+        error_print(f"Failed to Clone Template Repo: Reason: {err}")
         exit(1)
