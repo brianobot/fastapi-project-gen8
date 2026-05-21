@@ -1,7 +1,8 @@
-import pytest
 import unittest.mock
-
 from typing import cast
+
+import pytest
+
 from src.fastapi_gen8 import main
 
 
@@ -14,39 +15,29 @@ def test_display_intro_text(capsys):
     assert captured.err == ""
 
 
-def test_generate_default_project_details():
-    result = main.generate_default_project_details()
-    assert main.generate_default_project_details.__doc__
-    assert isinstance(result, dict)
-    assert all(
-        isinstance(default_value, str | int | tuple)
-        for default_value in result.values()
-    )
-
-
 @pytest.mark.parametrize(
     "attr,default_value,project_detail",
     [
         (
             "name",
             "My Awesome FastAPI Project Test",
-            main.generate_default_project_details(),
+            main.DEFAULT_PROJECT_DETAIL,
         ),
         (
             "slug_name",
             "my_awesome_fastapi_project",
-            main.generate_default_project_details(),
+            main.DEFAULT_PROJECT_DETAIL,
         ),
         (
             "description",
             "FastAPI Project Description",
-            main.generate_default_project_details(),
+            main.DEFAULT_PROJECT_DETAIL,
         ),
-        ("author(s)", "John Doe", main.generate_default_project_details()),
-        ("virtual_env_folder_name", "venv", main.generate_default_project_details()),
-        ("version", "0.0.1", main.generate_default_project_details()),
-        ("email", "brianobot9@gmail.com", main.generate_default_project_details()),
-        ("repository_url", "Default Name", main.generate_default_project_details()),
+        ("author(s)", "John Doe", main.DEFAULT_PROJECT_DETAIL),
+        ("virtual_env_folder_name", "venv", main.DEFAULT_PROJECT_DETAIL),
+        ("version", "0.0.1", main.DEFAULT_PROJECT_DETAIL),
+        ("email", "brianobot9@gmail.com", main.DEFAULT_PROJECT_DETAIL),
+        ("repository_url", "Default Name", main.DEFAULT_PROJECT_DETAIL),
         (
             "open_source_license",
             (
@@ -59,7 +50,7 @@ def test_generate_default_project_details():
                     "Not open source",
                 ],
             ),
-            main.generate_default_project_details(),
+            main.DEFAULT_PROJECT_DETAIL,
         ),
     ],
 )
@@ -69,7 +60,7 @@ def test_get_project_detail(
     project_detail: dict[str, str | int | tuple],
 ):
     with unittest.mock.patch("builtins.input", side_effect=[None]):
-        result = main.get_project_detail(attr, default_value, project_detail)
+        result = main.prompt_user_for_input(attr, default_value, project_detail)
         print("✅ Response: ", result)
         # assert None
         if isinstance(default_value, tuple):
