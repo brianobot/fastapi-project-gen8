@@ -30,7 +30,7 @@ def test_display_intro_text(capsys):
         ),
         (
             "description",
-            "FastAPI Project Description",
+            "Official API for Awesome FastAPI Project",
             main.DEFAULT_PROJECT_DETAIL,
         ),
         ("author(s)", "John Doe", main.DEFAULT_PROJECT_DETAIL),
