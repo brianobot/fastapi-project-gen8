@@ -5,10 +5,11 @@ import re
 import subprocess
 import time
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
+from .defaults import DEFAULT_PROJECT_DETAIL
 from .helpers import (
-    clone_repository,
+    clone_template_repository,
     display_intro_text,
     error_print,
     slugify,
@@ -16,47 +17,28 @@ from .helpers import (
     warning_print,
 )
 
+"""
+Step 1:
+    init the script
+    > fastapi-gen8
 
-def generate_default_project_details() -> dict[str, str | int | tuple]:
-    """
-    Generates Default Project Details
+Step 2
+    for each project detail prompt the user for an input, use fallback on empty inputs
+    > Enter Project Name ['My Awesome FastAPI Project']:
 
-    For Single Value Constant Details like name, description etc
-    The values are provided to the dictionary as simple String values
-    But for Enumerated Values like open_source_license type
-    the options are passed as a list of tuples where the the first item in tuple
-    if the enumerate for the item and the second item is the actual value to be stored,
+Step 3
+    Clone the Standard FastAPI project from Github alias the directory name as the slug_name provided by user
+    Change Directory into the newly cloned directory
+    Apply Book Keeping Changes
+        - Create logs/ directory
+        - Replace placeholders e.g `{project_name}` values across project files with user provided details
+        - Remove Former git metadata
+        - Initialize git on the directory again
+        - Add origin provided by the user
+        - Create Python Virtual Environment
+        - Install Packages in activated virtual environment
 
-    like so
-
-    open_source_license: (
-        "<default_enumeration>", [
-            (<enumeration>, "<actual_value>"),
-            ...
-        ]
-    )
-
-    """
-    return {
-        "name": "My Awesome FastAPI Project",
-        "slug_name": "my_awesome_fastapi_project",
-        "description": "FastAPI Project Description",
-        "author(s)": "John Doe",
-        "virtual_env_folder_name": "venv",
-        "version": "0.1.0",
-        "email": "brianobot9@gmail.com",
-        "repository_link": "",
-        "open_source_license": (
-            1,
-            [
-                "MIT",
-                "BSD",
-                "GPLv3",
-                "Apache Software License 2.0",
-                "Not open source",
-            ],
-        ),
-    }
+"""
 
 
 class ProjectOptionConfig:
@@ -80,74 +62,6 @@ class ProjectOptionConfig:
         """
         default_index = default[0]
         return cls.get_option_at(default[1], default_index)
-
-
-def get_project_detail(
-    attr: str,
-    default: str | tuple[int, list[str]],
-    project_detail: dict[str, str | int | tuple],
-) -> str | int:
-    """
-    Get a project detail (attr) from the user via the command line interface, if nothing is provided
-    the default value is used for the project detail value.
-    """
-
-    if "_" in attr:
-        attr = attr.lower()
-
-    if attr == "slug_name":
-        default = slugify(str(project_detail["name"]))
-
-    # Tuples Attrs means the detail have options, so process them differently
-    if not isinstance(default, tuple):
-        detail = input(f"Enter Project {attr} ['{default}']: ")
-    else:
-        count = 0
-        detail = ""
-        is_not_valid = True
-
-        default_value = ProjectOptionConfig.get_default_option(default)
-
-        while is_not_valid:
-            options = default[1]
-            print("Options: ", options)
-
-            print(f"Select {attr}:")
-            for index, option in enumerate(options, start=1):
-                print(f"\t{index} - {option}")
-
-            prompt_msg = f"Choose from {', '.join(str(i) for i in range(1, index + 1))}: [{cast(tuple, project_detail[attr])[0]}]: "
-            detail_index = input(prompt_msg)
-
-            if not detail_index or detail_index.isspace():
-                detail = default_value
-                is_not_valid = False
-            elif not detail_index.isdigit():
-                warning_print(
-                    f"Invalid Value {detail_index} for {attr}... Please Try Again!"
-                )
-            elif int(detail_index) not in range(1, index + 1):
-                warning_print(
-                    f"Invalid Value {detail_index} for {attr}... Please Try Again!"
-                )
-            else:
-                detail = ProjectOptionConfig.get_option_at(options, int(detail_index))
-                is_not_valid = False
-
-            count += 1
-            if count > 3:
-                break
-
-        if count >= 3:
-            error_print(f"Failed Due to repeated (X3) Invalid Value for {attr}")
-            exit(1)
-
-    # Process the value provided by the user
-    if attr == "slug_name":
-        detail = slugify(cast(str, detail)) if detail else ""
-    if attr == "authors":
-        detail = tuple(cast(str, detail).split(","))  # type: ignore
-    return detail if detail else default  # type: ignore
 
 
 def apply_project_metadata(project_detail: dict[str, str]) -> None:
@@ -180,23 +94,18 @@ def apply_project_metadata(project_detail: dict[str, str]) -> None:
 
 
 def generate_project_scaffold(project_detail: dict[str, str]):
-    # Clone The Default Project Template into Folder with Project Slug Name
-    # check if the project already exist
-
-    project_slug_name = project_detail["slug_name"]
-    if Path(project_slug_name).exists():
+    project_slug = project_detail["slug"]
+    if Path(project_slug).exists():
         error_print("Directory Already Exist")
         exit(1)
 
-    clone_repository(
-        "https://github.com/brianobot/fastAPI_project_structure", project_slug_name
-    )
+    clone_template_repository(project_slug)
 
     # Move into the Project Directory and Setup Git
-    os.chdir(project_slug_name)
+    os.chdir(project_slug)
 
-    # Create the Log directory
-    subprocess.Popen(["mkdir", "logs"])
+    # Create the logs directory
+    Path("logs").mkdir(exist_ok=True)
 
     # change default project values to user-defined values
     apply_project_metadata(
@@ -231,6 +140,33 @@ def generate_project_scaffold(project_detail: dict[str, str]):
     print("____________________________________________")
 
 
+def prompt_user_for_input(
+    attribute: str, default_value: Any, project_details: dict[str, Any]
+):
+    if attribute == "slug":
+        default_value = slugify(project_details.get("name", default_value))
+
+    if attribute == "description":
+        project_name = project_details["name"]
+        default_value = f"Official API for {project_name}"
+
+    if attribute == "open_source_license":
+        default_index = default_value[0]
+        options = default_value[1]
+
+    prompt = f"Enter Project's {attribute} [{default_value}]: "
+    user_input = input(prompt)
+
+    if attribute == "open_source_license":
+        if user_input not in range(1, 6):
+            warning_print("Invalid Input for Index. Default to MIT LICENSE")
+            return options[default_index - 1]  # type: ignore
+        else:
+            return options[int(user_input) - 1]  # type: ignore
+
+    return user_input if user_input else default_value
+
+
 def main():
     """
     Main entry point to interacting with the Command Line Utility of the Generator Library
@@ -249,17 +185,15 @@ def main():
     _args = parser.parse_args()
 
     display_intro_text()
-    project_details = generate_default_project_details()
+    project_details = DEFAULT_PROJECT_DETAIL.copy()
 
-    start_time = (
-        time.time()
-    )  # this is an internal metric to track the duration for each project generation
-    for attr, default_value in project_details.items():
-        detail = get_project_detail(attr.title(), default_value, project_details)
-        project_details[
-            attr
-        ] = detail  # update the default project detail with the provided one
-        success_print(f"Project {attr.title()} = {detail}")
+    # this is an internal metric to track the duration for each project generation
+    start_time = time.time()
+
+    for attribute, default_value in project_details.items():
+        detail = prompt_user_for_input(attribute, default_value, project_details)
+        project_details[attribute] = detail
+        success_print(f"Project {attribute.title()} = {detail}")
 
     elapsed_time = time.time() - start_time
     print("----------------------------------------------")
@@ -267,7 +201,7 @@ def main():
     print("----------------------------------------------")
 
     # Generate Projects with the Details Provided by the User
-    generate_project_scaffold(cast(dict[str, str], project_details))
+    generate_project_scaffold(project_details)
 
 
 if __name__ == "__main__":
