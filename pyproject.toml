@@ -30,9 +30,9 @@ dependencies = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/brianobot/fastapi-gen8#README.md"
-Issues = "https://github.com/brianobot/fastapi-gen8/issues"
-Source = "https://github.com/brianobot/fastapi-gen8"
+Documentation = "https://github.com/brianobot/fastapi-project-gen8#"
+Issues = "https://github.com/brianobot/fastapi-project-gen8/issues"
+Source = "https://github.com/brianobot/fastapi-project-gen8"
 
 
 [project.scripts]
