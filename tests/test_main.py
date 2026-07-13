@@ -48,7 +48,16 @@ def test_prompt_license_invalid_input_defaults_to_mit(monkeypatch, capsys, bad_i
     mock_input(monkeypatch, bad_input)
     result = main.prompt_user_for_input("open_source_license", LICENSE_DEFAULT, {})
     assert result == "MIT"
-    assert "Invalid Input" in capsys.readouterr().out
+    assert "Invalid selection" in capsys.readouterr().out
+
+
+def test_prompt_license_shows_numbered_menu(monkeypatch, capsys):
+    mock_input(monkeypatch, "1")
+    main.prompt_user_for_input("open_source_license", LICENSE_DEFAULT, {})
+    out = capsys.readouterr().out
+    assert "1. MIT" in out
+    assert "2. BSD" in out
+    assert "5. Not open source" in out
 
 
 # --- apply_project_metadata ------------------------------------------------
@@ -242,22 +251,21 @@ def test_generate_scaffold_exits_when_directory_exists(tmp_path, monkeypatch, ca
     assert "Directory already exists" in capsys.readouterr().out
 
 
-def test_generate_scaffold_resets_history_before_committing(tmp_path, monkeypatch):
+def test_generate_scaffold_initializes_repo_without_committing(tmp_path, monkeypatch):
     calls = []
     stub_scaffold(monkeypatch, tmp_path, lambda cmd: calls.append(cmd))
 
     main.generate_project_scaffold(sample_detail())
 
-    commit = ["git", "commit", "-m", "Save Metadata Changes"]
     assert ["rm", "-rf", ".git"] in calls
     assert ["git", "init"] in calls
-    assert ["git", "add", "-A"] in calls
-    assert commit in calls
     assert ["git", "remote", "add", "origin", "https://example.com/repo.git"] in calls
-    # history is wiped and re-initialised before the first commit is created
+    # history is wiped and re-initialised
     assert calls.index(["rm", "-rf", ".git"]) < calls.index(["git", "init"])
-    assert calls.index(["git", "init"]) < calls.index(commit)
-    # a LICENSE file is generated (and staged before the commit)
+    # the scaffold must NOT commit — the first commit is the user's to make
+    assert ["git", "add", "-A"] not in calls
+    assert not any(cmd[:2] == ["git", "commit"] for cmd in calls)
+    # a LICENSE file is still generated
     assert (tmp_path / "proj" / "LICENSE").read_text().startswith("MIT License")
 
 
@@ -273,16 +281,14 @@ def test_generate_scaffold_skips_remote_when_link_missing(
     assert "No repository link provided" in capsys.readouterr().out
 
 
-def test_generate_scaffold_continues_when_commit_fails(tmp_path, monkeypatch, capsys):
-    def run_with_failing_commit(cmd):
-        if cmd[:2] == ["git", "commit"]:
-            raise subprocess.CalledProcessError(1, cmd)
-
-    stub_scaffold(monkeypatch, tmp_path, run_with_failing_commit)
+def test_generate_scaffold_prompts_user_to_make_first_commit(
+    tmp_path, monkeypatch, capsys
+):
+    stub_scaffold(monkeypatch, tmp_path, lambda cmd: None)
 
     main.generate_project_scaffold(sample_detail())
 
-    assert "Could not create initial commit" in capsys.readouterr().out
+    assert "git commit" in capsys.readouterr().out
 
 
 # --- main (orchestration) --------------------------------------------------

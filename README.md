@@ -102,12 +102,13 @@ Once you've answered the prompts, Gen8:
 1. Clones the standard FastAPI template into a folder named after your slug.
 2. Fills in your project details (name, version, description) across the project's files.
 3. Generates a `LICENSE` file for your chosen license.
-4. Resets Git history and re-initializes the repo, linking your remote as `origin`.
+4. Initializes a fresh Git repo and links your remote as `origin` — but leaves the working tree **uncommitted**, so the first commit is yours to make.
 5. Creates a virtual environment and installs the project's dependencies.
 
 Then finish setup in your new project: update the `.env` file, activate the
-virtual environment, and run the included test suite. The generated project
-ships with its own README and a comprehensive set of unit tests to get you going.
+virtual environment, run the included test suite, and make your first commit
+(`git add . && git commit -m "Initial commit"`). The generated project ships
+with its own README and a comprehensive set of unit tests to get you going.
 
 ## Project Structure
 A typical generated project looks like:

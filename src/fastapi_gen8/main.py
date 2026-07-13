@@ -100,8 +100,9 @@ def generate_project_scaffold(project_detail: dict[str, str]) -> None:
     # Create the logs directory
     Path("logs").mkdir(exist_ok=True)
 
-    # Drop the template's git history and start a fresh repository so the
-    # metadata commit below becomes the project's first real commit.
+    # Drop the template's git history and start a fresh, empty repository. The
+    # working tree is intentionally left uncommitted — the first commit is the
+    # user's to make.
     run_command(["rm", "-rf", ".git"])
     run_command(["git", "init"])
 
@@ -119,14 +120,6 @@ def generate_project_scaffold(project_detail: dict[str, str]) -> None:
 
     # Write the LICENSE file matching the user's selected license
     write_license_file(project_detail["open_source_license"], project_detail["authors"])
-
-    # Commit the metadata changes on the fresh repository. A missing local git
-    # identity shouldn't abort the whole scaffold, so this step only warns.
-    run_command(["git", "add", "-A"])
-    try:
-        run_command(["git", "commit", "-m", "Save Metadata Changes"])
-    except subprocess.CalledProcessError:
-        warning_print("Could not create initial commit; skipping.")
 
     # Link the repo to the remote origin provided by the user, when present
     repository_link = project_detail["repository_link"]
@@ -146,12 +139,44 @@ def generate_project_scaffold(project_detail: dict[str, str]) -> None:
 
     print("____________________________________________")
     success_print("✅ Completed Project Initialization 🚀")
+    print("Your project is ready. Make the first commit when you are:")
+    print("    git add . && git commit -m 'Initial commit'")
     print("____________________________________________")
+
+
+def prompt_for_license(default_value: tuple[int, list[str]]) -> str:
+    """
+    Show the available licenses as a numbered menu and return the chosen option,
+    falling back to the default on empty or invalid input.
+
+    ``default_value`` is a ``(default_index, options)`` tuple, both 1-based.
+    """
+    default_index, options = default_value
+    default_option = options[default_index - 1]
+
+    print("Select Project's License:")
+    for position, option in enumerate(options, start=1):
+        print(f"    {position}. {option}")
+
+    user_input = input(
+        f"Enter the license number [{default_index}. {default_option}]: "
+    )
+    if (
+        not user_input
+        or not user_input.isdigit()
+        or int(user_input) not in range(1, len(options) + 1)
+    ):
+        warning_print(f"Invalid selection. Defaulting to {default_option}.")
+        return default_option
+    return options[int(user_input) - 1]
 
 
 def prompt_user_for_input(
     attribute: str, default_value: Any, project_details: dict[str, Any]
 ) -> str:
+    if attribute == "open_source_license":
+        return prompt_for_license(default_value)
+
     if attribute == "slug":
         default_value = slugify(project_details.get("name", default_value))
 
@@ -159,21 +184,7 @@ def prompt_user_for_input(
         project_name = project_details["name"]
         default_value = f"Official API for {project_name}"
 
-    prompt = f"Enter Project's {attribute} [{default_value}]: "
-    user_input = input(prompt)
-
-    if attribute == "open_source_license":
-        # default_value is a (default_index, options) tuple; both are 1-based.
-        default_index, options = default_value
-        if (
-            not user_input
-            or not user_input.isdigit()
-            or int(user_input) not in range(1, len(options) + 1)
-        ):
-            warning_print("Invalid Input for Index. Default to MIT LICENSE")
-            return options[default_index - 1]
-        return options[int(user_input) - 1]
-
+    user_input = input(f"Enter Project's {attribute} [{default_value}]: ")
     return user_input if user_input else default_value
 
 

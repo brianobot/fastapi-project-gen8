@@ -13,7 +13,7 @@ DEFAULT_PROJECT_DETAIL = {
     "authors": "John Doe",
     "virtual_env_folder_name": "venv",
     "version": "0.1.0",
-    "email": "brianobot9@gmail.com",
+    "email": "example@mail.com",
     "repository_link": "",
     "open_source_license": (
         1,
