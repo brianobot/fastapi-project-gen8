@@ -1,8 +1,16 @@
+# Default value presented for each project detail during the interactive prompt.
+#
+# Most values are plain strings. ``open_source_license`` is the exception: it is
+# a ``(default_index, options)`` tuple, where ``default_index`` is the 1-based
+# position of the option chosen when the user gives no (or an invalid) input.
+#
+# ``authors``, ``email`` and ``virtual_env_folder_name`` are collected from the
+# user but not yet applied to the generated project (reserved for future use).
 DEFAULT_PROJECT_DETAIL = {
     "name": "Awesome FastAPI Project",
     "slug": "awesome_fastapi_project",
     "description": "Official API for Awesome FastAPI Project",
-    "author(s)": "John Doe",
+    "authors": "John Doe",
     "virtual_env_folder_name": "venv",
     "version": "0.1.0",
     "email": "brianobot9@gmail.com",
@@ -18,21 +26,3 @@ DEFAULT_PROJECT_DETAIL = {
         ],
     ),
 }
-"""
-Generates Default Project Details
-
-For Single Value Constant Details like name, description etc
-The values are provided to the dictionary as simple String values
-But for Enumerated Values like open_source_license type
-the options are passed as a list of tuples where the the first item in tuple
-if the enumerate for the item and the second item is the actual value to be stored,
-
-like so
-
-open_source_license: (
-    "<default_enumeration>", [
-        (<enumeration>, "<actual_value>"),
-        ...
-    ]
-)
-"""

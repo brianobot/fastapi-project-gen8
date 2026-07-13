@@ -1,4 +1,41 @@
+import datetime
 import subprocess
+from pathlib import Path
+
+# Bundled license templates, keyed by the option label shown to the user in
+# defaults.DEFAULT_PROJECT_DETAIL. "Not open source" has no template — it falls
+# back to a short proprietary notice in write_license_file().
+LICENSE_DIR = Path(__file__).resolve().parent / "licenses"
+LICENSE_TEMPLATES = {
+    "MIT": "mit.txt",
+    "BSD": "bsd-3-clause.txt",
+    "GPLv3": "gpl-3.0.txt",
+    "Apache Software License 2.0": "apache-2.0.txt",
+}
+
+
+def write_license_file(license_choice: str, author: str) -> None:
+    """
+    Write a LICENSE file into the current directory for the chosen license.
+
+    MIT/BSD templates carry ``[year]``/``[fullname]`` placeholders that are
+    filled with the current year and the author. Apache-2.0/GPLv3 are written
+    verbatim (their copyright notice lives in source headers, not the license
+    body). Any unrecognised choice (e.g. "Not open source") writes a short
+    proprietary "all rights reserved" notice instead.
+    """
+    year = str(datetime.date.today().year)
+    template = LICENSE_TEMPLATES.get(license_choice)
+
+    if template is None:
+        Path("LICENSE").write_text(
+            f"Copyright (c) {year} {author}\nAll rights reserved.\n"
+        )
+        return
+
+    text = (LICENSE_DIR / template).read_text(encoding="utf-8")
+    text = text.replace("[year]", year).replace("[fullname]", author)
+    Path("LICENSE").write_text(text)
 
 
 def display_intro_text() -> None:
@@ -76,10 +113,7 @@ def clone_template_repository(
     repository_url="https://github.com/brianobot/fastAPI_project_structure",
 ):
     try:
-        clone_template_repo = subprocess.Popen(
-            ["git", "clone", repository_url, dir_name]
-        )
-        clone_template_repo.wait()
-    except Exception as err:
+        subprocess.run(["git", "clone", repository_url, dir_name], check=True)
+    except subprocess.CalledProcessError as err:
         error_print(f"Failed to Clone Template Repo: Reason: {err}")
         exit(1)

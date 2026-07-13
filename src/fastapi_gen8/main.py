@@ -1,9 +1,24 @@
+"""FastAPI Gen8 command-line project generator.
+
+The generation flow is:
+
+1. Initialise the CLI (``fastapi-gen8``).
+2. Prompt the user for each project detail, falling back to defaults on empty
+   input.
+3. Scaffold the project: clone the standard FastAPI template (renaming the
+   directory to the slug), change into it, then apply bookkeeping changes —
+   create ``logs/``, replace ``{{ placeholder }}`` values with the user's
+   details, reset git history and re-initialise, add the user's remote, create a
+   virtual environment, and install requirements.
+"""
+
 import argparse
 import importlib.metadata
 import os
 import re
 import subprocess
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
 
@@ -15,88 +30,66 @@ from .helpers import (
     slugify,
     success_print,
     warning_print,
+    write_license_file,
 )
 
-"""
-Step 1:
-    init the script
-    > fastapi-gen8
-
-Step 2
-    for each project detail prompt the user for an input, use fallback on empty inputs
-    > Enter Project Name ['My Awesome FastAPI Project']:
-
-Step 3
-    Clone the Standard FastAPI project from Github alias the directory name as the slug_name provided by user
-    Change Directory into the newly cloned directory
-    Apply Book Keeping Changes
-        - Create logs/ directory
-        - Replace placeholders e.g `{project_name}` values across project files with user provided details
-        - Remove Former git metadata
-        - Initialize git on the directory again
-        - Add origin provided by the user
-        - Create Python Virtual Environment
-        - Install Packages in activated virtual environment
-
-"""
+# Jinja-style placeholders embedded throughout the template, each mapped to the
+# project detail that fills it.
+PROJECT_PLACEHOLDERS = {
+    "project_name": "name",
+    "project_version": "version",
+    "project_description": "description",
+}
 
 
-class ProjectOptionConfig:
-    """
-    Utility Functions for working with Project Detail Options.
-    """
-
-    @classmethod
-    def get_option_at(cls, option: list[str], position: int) -> str:
-        """
-        Since indexes are zero based and position are 1 based
-        substracting 1 from each get the option at the current index
-        """
-        return option[position - 1]
-
-    @classmethod
-    def get_default_option(cls, default: tuple[int, list[str]]) -> str:
-        """
-        Takes the whole default value, extracts the default index and extract the default value
-        based on the default index
-        """
-        default_index = default[0]
-        return cls.get_option_at(default[1], default_index)
+def _literal_repl(value: str) -> Callable[[re.Match[str]], str]:
+    """A re.sub replacement that inserts ``value`` verbatim (ignoring backrefs)."""
+    return lambda _match: value
 
 
 def apply_project_metadata(project_detail: dict[str, str]) -> None:
-    # replace placeholder values with user generated values
-    target = Path("app/main.py")
-    if not target.exists():
-        print("main.py not found, skipping metadata update")
-        return
+    """
+    Replace the ``{{ project_name }}``, ``{{ project_version }}`` and
+    ``{{ project_description }}`` placeholders with the user's values across
+    every text file in the generated project — not just ``app/main.py`` (the
+    template also references them elsewhere, e.g. ``app/services/auth.py``).
 
-    content = target.read_text()
+    Whitespace inside a placeholder is tolerated, values are inserted literally,
+    and binary/unreadable files (and the ``.git`` directory) are skipped.
+    """
+    patterns = [
+        (re.compile(rf"\{{\{{\s*{placeholder}\s*\}}\}}"), project_detail[detail_key])
+        for placeholder, detail_key in PROJECT_PLACEHOLDERS.items()
+    ]
 
-    content = content.replace(
-        'title="{{ project_name }}"',
-        f'title="{project_detail["name"]}"',
-        1,
-    )
-    content = content.replace(
-        'version="{{ project_version }}"',
-        f'version="{project_detail["version"]}"',
-        1,
-    )
+    for path in sorted(Path(".").rglob("*")):
+        if not path.is_file() or ".git" in path.parts:
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue  # skip binary / unreadable files
 
-    content = re.sub(
-        r'summary\s*=\s*["\']\{\{\s*project_description\s*\}\}["\']',
-        f'summary="{project_detail["description"]}"',
-        content,
-        count=1,
-    )
-    target.write_text(content)
+        updated = content
+        for regex, value in patterns:
+            updated = regex.sub(_literal_repl(value), updated)
+
+        if updated != content:
+            path.write_text(updated, encoding="utf-8")
 
 
-def generate_project_scaffold(project_detail: dict[str, str]):
+def run_command(cmd: list[str]) -> None:
+    """
+    Run an external command, raising subprocess.CalledProcessError if it fails
+    so that scaffold errors surface instead of being silently swallowed.
+    """
+    subprocess.run(cmd, check=True)
+
+
+def generate_project_scaffold(project_detail: dict[str, str]) -> None:
     project_slug = project_detail["slug"]
     if Path(project_slug).exists():
-        error_print("Directory Already Exist")
+        error_print("Directory already exists")
         exit(1)
 
     clone_template_repository(project_slug)
@@ -107,33 +100,49 @@ def generate_project_scaffold(project_detail: dict[str, str]):
     # Create the logs directory
     Path("logs").mkdir(exist_ok=True)
 
+    # Drop the template's git history and start a fresh repository so the
+    # metadata commit below becomes the project's first real commit.
+    run_command(["rm", "-rf", ".git"])
+    run_command(["git", "init"])
+
     # change default project values to user-defined values
     apply_project_metadata(
         cast(
             dict[str, str],
             {
                 "name": str(project_detail["name"]),
-                "description": str([project_detail["description"]]),
+                "description": str(project_detail["description"]),
                 "version": str(project_detail["version"]),
             },
         )
     )
-    # Commit changes for metadata changes before continueing
-    subprocess.Popen(["git", "commit", "-am", "Save Metadata Changes"]).wait()
-    # pull changes from the user-with-email branch
-    subprocess.Popen(["git", "config", "pull.rebase", "false"]).wait()
-    # Remove former git metadata and link repo to the provided repo link
-    subprocess.Popen(["rm", "-rf", ".git"]).wait()
-    subprocess.Popen(["git", "init"]).wait()
-    subprocess.Popen(
-        ["git", "remote", "add", "origin", project_detail["repository_link"]]
-    ).wait()
+
+    # Write the LICENSE file matching the user's selected license
+    write_license_file(project_detail["open_source_license"], project_detail["authors"])
+
+    # Commit the metadata changes on the fresh repository. A missing local git
+    # identity shouldn't abort the whole scaffold, so this step only warns.
+    run_command(["git", "add", "-A"])
+    try:
+        run_command(["git", "commit", "-m", "Save Metadata Changes"])
+    except subprocess.CalledProcessError:
+        warning_print("Could not create initial commit; skipping.")
+
+    # Link the repo to the remote origin provided by the user, when present
+    repository_link = project_detail["repository_link"]
+    if repository_link:
+        run_command(["git", "remote", "add", "origin", repository_link])
+    else:
+        warning_print(
+            "No repository link provided. Add a remote manually with "
+            "`git remote add origin <url>`."
+        )
 
     # create and activate virtual environment
-    subprocess.Popen(["python3", "-m", "venv", "venv"]).wait()
-    subprocess.Popen(
+    run_command(["python3", "-m", "venv", "venv"])
+    run_command(
         ["bash", "-c", "source venv/bin/activate && pip install -r requirements.txt"]
-    ).wait()
+    )
 
     print("____________________________________________")
     success_print("✅ Completed Project Initialization 🚀")
@@ -142,7 +151,7 @@ def generate_project_scaffold(project_detail: dict[str, str]):
 
 def prompt_user_for_input(
     attribute: str, default_value: Any, project_details: dict[str, Any]
-):
+) -> str:
     if attribute == "slug":
         default_value = slugify(project_details.get("name", default_value))
 
@@ -150,24 +159,25 @@ def prompt_user_for_input(
         project_name = project_details["name"]
         default_value = f"Official API for {project_name}"
 
-    if attribute == "open_source_license":
-        default_index = default_value[0]
-        options = default_value[1]
-
     prompt = f"Enter Project's {attribute} [{default_value}]: "
     user_input = input(prompt)
 
     if attribute == "open_source_license":
-        if user_input not in range(1, 6):
+        # default_value is a (default_index, options) tuple; both are 1-based.
+        default_index, options = default_value
+        if (
+            not user_input
+            or not user_input.isdigit()
+            or int(user_input) not in range(1, len(options) + 1)
+        ):
             warning_print("Invalid Input for Index. Default to MIT LICENSE")
-            return options[default_index - 1]  # type: ignore
-        else:
-            return options[int(user_input) - 1]  # type: ignore
+            return options[default_index - 1]
+        return options[int(user_input) - 1]
 
     return user_input if user_input else default_value
 
 
-def main():
+def main() -> None:
     """
     Main entry point to interacting with the Command Line Utility of the Generator Library
     """
@@ -197,11 +207,12 @@ def main():
 
     elapsed_time = time.time() - start_time
     print("----------------------------------------------")
-    success_print(f"Elasped Time: {elapsed_time:.4f} secs 🎉🎉")
+    success_print(f"Elapsed Time: {elapsed_time:.4f} secs 🎉🎉")
     print("----------------------------------------------")
 
-    # Generate Projects with the Details Provided by the User
-    generate_project_scaffold(project_details)
+    # Generate Projects with the Details Provided by the User. By this point
+    # every prompted value has been resolved to a string.
+    generate_project_scaffold(cast(dict[str, str], project_details))
 
 
 if __name__ == "__main__":

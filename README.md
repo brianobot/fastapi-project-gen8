@@ -26,22 +26,33 @@ ______________________________________________________________
         ╚═════╝ ╚══════╝╚═╝  ╚═══╝╚═══╝ ╚════╝
 ______________________________________________________________
 
-Generate a Functional FastAPI Projects in Seconds 🚀
+Generate functional FastAPI projects in seconds 🚀
 
 ## Overview
 
-FastAPI Gen8 is a lightweight command-line tool designed to generate clean, structured, production-ready FastAPI project scaffolds at warp speed.
-Whether you're spinning up a new microservice or testing a prototype idea, Gen8 gives you a fresh, organized foundation with sensible defaults — so you can focus on building, not boring setup rituals.
+FastAPI Gen8 removes the repetitive setup that stands between an idea and a running API. A single command scaffolds a clean, opinionated FastAPI project — routers, models, services, middleware, a mailer, a Redis manager, Alembic migrations, logging, and tests — then wires up Git, a virtual environment, and a license. You go from `pip install` to writing endpoints in under a minute, instead of copy-pasting boilerplate from your last project.
 
+## Use Cases
 
-### Prerequisites
+Reach for Gen8 whenever the setup is the boring part:
 
-Before igniting the generator, make sure you've completed the following:
+- **New microservice** — stand up a service with a consistent, production-ready layout in seconds.
+- **Prototyping** — validate an idea without hand-rolling structure you'll throw away.
+- **Hackathons & time-boxed builds** — spend your minutes on features, not folder trees.
+- **Consistency across a team or portfolio** — every service starts from the same conventions, so switching between them is frictionless.
+- **Teaching & workshops** — hand learners a ready-to-run FastAPI baseline instead of a blank folder.
 
-- Create a remote Git repository for your new project.
-- Optionally Setup a Database (E.g, Postgres, MySQL) for your FastAPI App
-- Setup a Redis Server running on your machine
+## Prerequisites
 
+Gen8 itself only needs **Python** and **Git**. Before igniting the generator:
+
+- Create a remote Git repository for your new project (Gen8 will link it as `origin`).
+
+The following are prerequisites for *running the FastAPI project you generate* —
+not for Gen8 itself — so set them up when you're ready to run your new app:
+
+- Optionally, a database (e.g. Postgres, MySQL) for your FastAPI app.
+- A Redis server for your FastAPI app.
 
 Gen8 will automatically initialize Git and link your project to the remote origin you provide.
 
@@ -49,45 +60,61 @@ Gen8 will automatically initialize Git and link your project to the remote origi
 
 - Instant FastAPI project scaffold.
 - Automatic Git initialization + remote origin setup.
+- Generates a `LICENSE` file for your chosen license (MIT, BSD, GPLv3, or Apache 2.0), pre-filled with the current year and author.
 - Clean directory structure and preconfigured templates.
 - Opinionated defaults with sensible fallbacks.
 - Fast, simple, and repeatable.
 
-Installation
+## Quick Start
+
+Install from PyPI:
+
 ```bash
 pip install fastapi-gen8
 ```
 
-Usage
+Run the generator and follow the prompts:
+
 ```bash
 fastapi-gen8
 ```
+
 ![Introduction Screenshot](images/intro_demo.png)
 
+### Answering the prompts
 
-You’ll be prompted for project details such as name, slug, description, and Git remote URL.
-and also following through, a FastAPI project would be generated for you with those details.
-You can use the README on the generated project to verify and complete the project setup like updating .env file
-and running your first unit test on the project.
+Gen8 walks you through a short series of questions. Each shows a default in
+`[brackets]` — press **Enter** to accept it, or type your own value:
 
-### Note:
-The generated project comes with a comprehensive Unit tests for the code it contains
+| Prompt | What it's for |
+| --- | --- |
+| **Name** | Human-readable project name; becomes the API title in the docs. |
+| **Slug** | Folder name for the project (defaults to a slugified name). |
+| **Description** | Shown as the API summary in the generated OpenAPI docs. |
+| **Version** | Initial project version. |
+| **Repository link** | Your remote Git URL; Gen8 links it as `origin`. |
+| **License** | MIT, BSD, GPLv3, Apache 2.0, or "Not open source" — generates a matching `LICENSE`. |
 
-### Example
-```bash
-fastapi-gen8
-```
+### What happens next
 
-#### Project Structure
+Once you've answered the prompts, Gen8:
+
+1. Clones the standard FastAPI template into a folder named after your slug.
+2. Fills in your project details (name, version, description) across the project's files.
+3. Generates a `LICENSE` file for your chosen license.
+4. Resets Git history and re-initializes the repo, linking your remote as `origin`.
+5. Creates a virtual environment and installs the project's dependencies.
+
+Then finish setup in your new project: update the `.env` file, activate the
+virtual environment, and run the included test suite. The generated project
+ships with its own README and a comprehensive set of unit tests to get you going.
+
+## Project Structure
 A typical generated project looks like:
 
 ```
 <project_slug_name>/
 ├── app/
-│   ├── main.py
-│   ├── routers/
-│   ├── models/
-│   ├── services/
 │   ├── __init__.py
 │   ├── main.py
 │   ├── api_router.py
@@ -96,7 +123,10 @@ A typical generated project looks like:
 │   ├── middlewares.py
 │   ├── mailer.py
 │   ├── redis_manager.py
-│   └── utils
+│   ├── routers/
+│   ├── models/
+│   ├── services/
+│   └── utils/
 ├── requirements.txt
 ├── alembic/
 ├── alembic.ini
@@ -110,6 +140,25 @@ A typical generated project looks like:
 - Because the world moves too fast for boilerplate.
 - Because creativity should start at the endpoint, not the folder tree.
 - Because momentum matters — and FastAPI Gen8 gives you that first push.
+
+## Development
+
+This repository is the **generator CLI**. The FastAPI template it clones lives in a
+[separate repository](https://github.com/brianobot/fastAPI_project_structure).
+
+```bash
+# Run the CLI from a local checkout
+python -m fastapi_gen8.main
+
+# Run the test suite (uses hatch)
+hatch run pytest
+
+# Type-check
+hatch run types:check
+
+# Lint & format (isort, black, ruff, mypy) via pre-commit
+pre-commit run --all-files
+```
 
 ## License
 - [MIT License](LICENSE)
