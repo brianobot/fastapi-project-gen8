@@ -1,71 +1,311 @@
-import unittest.mock
-from typing import cast
+import subprocess
 
 import pytest
 
-from src.fastapi_gen8 import main
+from fastapi_gen8 import main
+
+LICENSE_DEFAULT = main.DEFAULT_PROJECT_DETAIL["open_source_license"]
 
 
-def test_display_intro_text(capsys):
-    main.display_intro_text()
-
-    captured = capsys.readouterr()
-    assert main.display_intro_text.__doc__
-    assert isinstance(captured.out, str)
-    assert captured.err == ""
+def mock_input(monkeypatch, value):
+    """Make builtins.input return `value` for the next prompt."""
+    monkeypatch.setattr("builtins.input", lambda prompt="": value)
 
 
-@pytest.mark.parametrize(
-    "attr,default_value,project_detail",
-    [
-        (
-            "name",
-            "My Awesome FastAPI Project Test",
-            main.DEFAULT_PROJECT_DETAIL,
-        ),
-        (
-            "slug_name",
-            "my_awesome_fastapi_project",
-            main.DEFAULT_PROJECT_DETAIL,
-        ),
-        (
-            "description",
-            "Official API for Awesome FastAPI Project",
-            main.DEFAULT_PROJECT_DETAIL,
-        ),
-        ("author(s)", "John Doe", main.DEFAULT_PROJECT_DETAIL),
-        ("virtual_env_folder_name", "venv", main.DEFAULT_PROJECT_DETAIL),
-        ("version", "0.0.1", main.DEFAULT_PROJECT_DETAIL),
-        ("email", "brianobot9@gmail.com", main.DEFAULT_PROJECT_DETAIL),
-        ("repository_url", "Default Name", main.DEFAULT_PROJECT_DETAIL),
-        (
-            "open_source_license",
-            (
-                1,
-                [
-                    "MIT",
-                    "BSD",
-                    "GPLv3",
-                    "Apache Software License 2.0",
-                    "Not open source",
-                ],
-            ),
-            main.DEFAULT_PROJECT_DETAIL,
-        ),
-    ],
-)
-def test_get_project_detail(
-    attr: str,
-    default_value: str | int | tuple,
-    project_detail: dict[str, str | int | tuple],
+# --- prompt_user_for_input -------------------------------------------------
+
+
+def test_prompt_returns_user_input_when_provided(monkeypatch):
+    mock_input(monkeypatch, "My Project")
+    assert main.prompt_user_for_input("name", "Default", {}) == "My Project"
+
+
+def test_prompt_falls_back_to_default_on_empty_input(monkeypatch):
+    mock_input(monkeypatch, "")
+    assert main.prompt_user_for_input("name", "Default", {}) == "Default"
+
+
+def test_prompt_slug_is_derived_from_project_name(monkeypatch):
+    mock_input(monkeypatch, "")
+    result = main.prompt_user_for_input("slug", "ignored", {"name": "My Cool App"})
+    assert result == "my_cool_app"
+
+
+def test_prompt_description_is_templated_from_project_name(monkeypatch):
+    mock_input(monkeypatch, "")
+    result = main.prompt_user_for_input("description", "ignored", {"name": "Ledger"})
+    assert result == "Official API for Ledger"
+
+
+def test_prompt_license_valid_selection_returns_chosen_option(monkeypatch):
+    mock_input(monkeypatch, "3")
+    result = main.prompt_user_for_input("open_source_license", LICENSE_DEFAULT, {})
+    assert result == "GPLv3"
+
+
+@pytest.mark.parametrize("bad_input", ["", "0", "6", "99", "abc", "-1", " "])
+def test_prompt_license_invalid_input_defaults_to_mit(monkeypatch, capsys, bad_input):
+    mock_input(monkeypatch, bad_input)
+    result = main.prompt_user_for_input("open_source_license", LICENSE_DEFAULT, {})
+    assert result == "MIT"
+    assert "Invalid selection" in capsys.readouterr().out
+
+
+def test_prompt_license_shows_numbered_menu(monkeypatch, capsys):
+    mock_input(monkeypatch, "1")
+    main.prompt_user_for_input("open_source_license", LICENSE_DEFAULT, {})
+    out = capsys.readouterr().out
+    assert "1. MIT" in out
+    assert "2. BSD" in out
+    assert "5. Not open source" in out
+
+
+# --- apply_project_metadata ------------------------------------------------
+
+
+def write_template(tmp_path, body):
+    app_dir = tmp_path / "app"
+    app_dir.mkdir()
+    target = app_dir / "main.py"
+    target.write_text(body)
+    return target
+
+
+def test_apply_metadata_replaces_every_placeholder(tmp_path, monkeypatch):
+    target = write_template(
+        tmp_path,
+        "FastAPI(\n"
+        '    title="{{ project_name }}",\n'
+        '    version="{{ project_version }}",\n'
+        '    summary="{{ project_description }}",\n'
+        ")\n",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    main.apply_project_metadata(
+        {"name": "Cool API", "version": "1.2.3", "description": "Does things"}
+    )
+
+    content = target.read_text()
+    assert 'title="Cool API"' in content
+    assert 'version="1.2.3"' in content
+    assert 'summary="Does things"' in content
+    assert "{{" not in content
+
+
+def test_apply_metadata_tolerates_quote_and_spacing_variations(tmp_path, monkeypatch):
+    target = write_template(
+        tmp_path,
+        "FastAPI(\n"
+        "    title='{{project_name}}',\n"
+        '    version = "{{  project_version  }}",\n'
+        ")\n",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    main.apply_project_metadata({"name": "API", "version": "9.9", "description": "x"})
+
+    content = target.read_text()
+    # only the placeholder token is replaced; surrounding quotes are preserved
+    assert "title='API'" in content
+    assert 'version = "9.9"' in content
+    assert "{{" not in content
+
+
+def test_apply_metadata_replaces_placeholders_across_all_files(tmp_path, monkeypatch):
+    services = tmp_path / "app" / "services"
+    services.mkdir(parents=True)
+    (services / "auth.py").write_text('subject = "Welcome to {{ project_name }}"\n')
+    (tmp_path / "README.md").write_text("# {{ project_name }} v{{ project_version }}\n")
+    monkeypatch.chdir(tmp_path)
+
+    main.apply_project_metadata(
+        {"name": "Ledger", "version": "2.0.0", "description": "d"}
+    )
+
+    assert (services / "auth.py").read_text() == 'subject = "Welcome to Ledger"\n'
+    assert (tmp_path / "README.md").read_text() == "# Ledger v2.0.0\n"
+
+
+def test_apply_metadata_skips_git_directory(tmp_path, monkeypatch):
+    git_file = tmp_path / ".git" / "COMMIT_EDITMSG"
+    git_file.parent.mkdir()
+    git_file.write_text("{{ project_name }}\n")
+    monkeypatch.chdir(tmp_path)
+
+    main.apply_project_metadata({"name": "Ledger", "version": "1", "description": "d"})
+
+    # files under .git must be left untouched
+    assert git_file.read_text() == "{{ project_name }}\n"
+
+
+def test_apply_metadata_skips_binary_files(tmp_path, monkeypatch):
+    (tmp_path / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n\xff\xfe{{ project_name }}")
+    (tmp_path / "app.py").write_text("name = '{{ project_name }}'\n")
+    monkeypatch.chdir(tmp_path)
+
+    # a binary file that fails to decode must not abort the whole pass
+    main.apply_project_metadata({"name": "X", "version": "1", "description": "d"})
+
+    assert "name = 'X'" in (tmp_path / "app.py").read_text()
+
+
+def test_apply_metadata_does_not_serialize_description_as_a_list(tmp_path, monkeypatch):
+    target = write_template(tmp_path, 'FastAPI(summary="{{ project_description }}")\n')
+    monkeypatch.chdir(tmp_path)
+
+    main.apply_project_metadata(
+        {"name": "n", "version": "v", "description": "plain text"}
+    )
+
+    assert 'summary="plain text"' in target.read_text()
+
+
+def test_apply_metadata_inserts_regex_special_characters_literally(
+    tmp_path, monkeypatch
 ):
-    with unittest.mock.patch("builtins.input", side_effect=[None]):
-        result = main.prompt_user_for_input(attr, default_value, project_detail)
-        print("✅ Response: ", result)
-        # assert None
-        if isinstance(default_value, tuple):
-            default_value = cast(tuple, default_value)
-            assert result == cast(list, default_value[1])[default_value[0] - 1]
-        else:
-            assert result == default_value
-        assert isinstance(result, str | int | tuple)
+    # A description containing a regex backreference (\1) or metacharacters must
+    # be written verbatim, not interpreted by re.sub.
+    target = write_template(tmp_path, 'FastAPI(summary="{{ project_description }}")\n')
+    monkeypatch.chdir(tmp_path)
+
+    main.apply_project_metadata(
+        {"name": "n", "version": "v", "description": r"money & \1 backref"}
+    )
+
+    assert r'summary="money & \1 backref"' in target.read_text()
+
+
+def test_apply_metadata_is_noop_when_no_files_present(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # empty project tree
+
+    # should not raise when there is nothing to process
+    main.apply_project_metadata({"name": "n", "version": "v", "description": "d"})
+
+    assert list(tmp_path.iterdir()) == []
+
+
+# --- run_command -----------------------------------------------------------
+
+
+def test_run_command_invokes_subprocess_with_check(monkeypatch):
+    seen = {}
+
+    def fake_run(cmd, **kwargs):
+        seen["cmd"] = cmd
+        seen["check"] = kwargs.get("check")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    main.run_command(["echo", "hi"])
+
+    assert seen == {"cmd": ["echo", "hi"], "check": True}
+
+
+def test_run_command_propagates_command_failure(monkeypatch):
+    def failing_run(cmd, **kwargs):
+        raise subprocess.CalledProcessError(1, cmd)
+
+    monkeypatch.setattr(subprocess, "run", failing_run)
+
+    with pytest.raises(subprocess.CalledProcessError):
+        main.run_command(["false"])
+
+
+# --- generate_project_scaffold ---------------------------------------------
+
+
+def stub_scaffold(monkeypatch, tmp_path, run_impl):
+    """Run generate_project_scaffold against tmp_path with git/clone stubbed out."""
+    monkeypatch.chdir(tmp_path)
+
+    def fake_clone(slug, *args, **kwargs):
+        (tmp_path / slug).mkdir()
+
+    monkeypatch.setattr(main, "clone_template_repository", fake_clone)
+    monkeypatch.setattr(main, "run_command", run_impl)
+
+
+def sample_detail(**overrides):
+    detail = {
+        "slug": "proj",
+        "name": "Proj",
+        "description": "desc",
+        "version": "1.0.0",
+        "authors": "Jane Dev",
+        "open_source_license": "MIT",
+        "repository_link": "https://example.com/repo.git",
+    }
+    detail.update(overrides)
+    return detail
+
+
+def test_generate_scaffold_exits_when_directory_exists(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "proj").mkdir()
+
+    with pytest.raises(SystemExit) as exit_info:
+        main.generate_project_scaffold(sample_detail())
+
+    assert exit_info.value.code == 1
+    assert "Directory already exists" in capsys.readouterr().out
+
+
+def test_generate_scaffold_initializes_repo_without_committing(tmp_path, monkeypatch):
+    calls = []
+    stub_scaffold(monkeypatch, tmp_path, lambda cmd: calls.append(cmd))
+
+    main.generate_project_scaffold(sample_detail())
+
+    assert ["rm", "-rf", ".git"] in calls
+    assert ["git", "init"] in calls
+    assert ["git", "remote", "add", "origin", "https://example.com/repo.git"] in calls
+    # history is wiped and re-initialised
+    assert calls.index(["rm", "-rf", ".git"]) < calls.index(["git", "init"])
+    # the scaffold must NOT commit — the first commit is the user's to make
+    assert ["git", "add", "-A"] not in calls
+    assert not any(cmd[:2] == ["git", "commit"] for cmd in calls)
+    # a LICENSE file is still generated
+    assert (tmp_path / "proj" / "LICENSE").read_text().startswith("MIT License")
+
+
+def test_generate_scaffold_skips_remote_when_link_missing(
+    tmp_path, monkeypatch, capsys
+):
+    calls = []
+    stub_scaffold(monkeypatch, tmp_path, lambda cmd: calls.append(cmd))
+
+    main.generate_project_scaffold(sample_detail(repository_link=""))
+
+    assert not any(cmd[:3] == ["git", "remote", "add"] for cmd in calls)
+    assert "No repository link provided" in capsys.readouterr().out
+
+
+def test_generate_scaffold_prompts_user_to_make_first_commit(
+    tmp_path, monkeypatch, capsys
+):
+    stub_scaffold(monkeypatch, tmp_path, lambda cmd: None)
+
+    main.generate_project_scaffold(sample_detail())
+
+    assert "git commit" in capsys.readouterr().out
+
+
+# --- main (orchestration) --------------------------------------------------
+
+
+def test_main_collects_all_details_and_generates(monkeypatch):
+    # empty input at every prompt -> defaults are used throughout
+    monkeypatch.setattr("builtins.input", lambda prompt="": "")
+    monkeypatch.setattr("sys.argv", ["fastapi-gen8"])
+
+    generated = {}
+    monkeypatch.setattr(
+        main, "generate_project_scaffold", lambda detail: generated.update(detail)
+    )
+
+    main.main()
+
+    assert set(generated) == set(main.DEFAULT_PROJECT_DETAIL)
+    assert generated["slug"] == "awesome_fastapi_project"
+    assert generated["open_source_license"] == "MIT"

@@ -1,0 +1,68 @@
+name: Release on Version Bump
+
+# Releases land on `master` (the existing dev -> master PR flow feeds it). Every
+# push to master is checked: if the version in __about__.py has no matching tag
+# yet, a new tag + GitHub Release is created. Re-runs are safe — an existing tag
+# short-circuits the job, so nothing is released twice.
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read package version
+        id: version
+        run: |
+          VERSION=$(sed -nE 's/^__version__ = "([^"]+)".*/\1/p' src/fastapi_gen8/__about__.py)
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not read __version__ from src/fastapi_gen8/__about__.py"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Detected version $VERSION (tag v$VERSION)"
+
+      - name: Check whether this version was already released
+        id: check
+        run: |
+          if git ls-remote --tags --exit-code origin "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${{ steps.version.outputs.tag }} already exists — nothing to release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No tag ${{ steps.version.outputs.tag }} yet — a release will be created."
+          fi
+
+      - name: Set up Python
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build distribution
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          python -m pip install --upgrade pip hatch
+          hatch build
+
+      - name: Create GitHub release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "${{ steps.version.outputs.tag }}" \
+            --generate-notes \
+            --target "$GITHUB_SHA" \
+            dist/*
